@@ -19,6 +19,11 @@ contextBridge.exposeInMainWorld('resolveAPI', {
     cleanup: () => ipcRenderer.invoke('resolve:cleanup')
 });
 
+contextBridge.exposeInMainWorld('overlayAPI', {
+    save: (data) => ipcRenderer.invoke('overlay:save', data),
+    insertTitle: (titleName) => ipcRenderer.invoke('resolve:insertTitle', titleName)
+});
+
 contextBridge.exposeInMainWorld('claudeAPI', {
     sendPrompt: (text) => ipcRenderer.invoke('claude:send', text),
     onOutput: (callback) => ipcRenderer.on('claude:stdout', (_e, data) => callback(data)),

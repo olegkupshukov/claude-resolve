@@ -141,6 +141,13 @@ body {
     pointer-events: none;
 }
 
+.btn-install {
+    display: block;
+    margin-top: var(--gap-sm);
+    padding: var(--gap-xs) var(--gap-md);
+    font-size: var(--font-size-sm);
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }

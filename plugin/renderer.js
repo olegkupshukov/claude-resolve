@@ -78,9 +78,47 @@ function handleDone(code) {
     if (code !== 0 && currentResponse) {
         currentResponse.classList.add('error');
     }
+
+    if (code === 0 && currentResponse) {
+        const parsed = tryParseOGrafResponse(currentResponse.textContent);
+        if (parsed) {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-install';
+            btn.textContent = 'Install & Add to Timeline';
+            btn.addEventListener('click', () => installOGraf(btn, parsed));
+            currentResponse.appendChild(btn);
+        }
+    }
+
     currentResponse = null;
     isProcessing = false;
     setInputEnabled(true);
+}
+
+function tryParseOGrafResponse(text) {
+    const jsonMatch = text.match(/```json\s*\n\/\/ FILE:\s*(\S+\.ograf\.json)\s*\n([\s\S]*?)```/);
+    const jsMatch = text.match(/```javascript\s*\n\/\/ FILE:\s*(\S+\.js)\s*\n([\s\S]*?)```/);
+    if (!jsonMatch || !jsMatch) return null;
+
+    const templateName = jsonMatch[1].replace('.ograf.json', '');
+    return {
+        templateName,
+        manifestJSON: jsonMatch[2].trim(),
+        componentJS: jsMatch[2].trim()
+    };
+}
+
+async function installOGraf(btn, parsed) {
+    btn.disabled = true;
+    btn.textContent = 'Installing...';
+    try {
+        await window.overlayAPI.save(parsed);
+        const item = await window.overlayAPI.insertTitle(parsed.templateName);
+        btn.textContent = item ? 'Added to Timeline' : 'Installed (add manually)';
+    } catch (err) {
+        btn.textContent = 'Install Failed';
+        btn.classList.add('error');
+    }
 }
 
 function addMessage(text, type) {
