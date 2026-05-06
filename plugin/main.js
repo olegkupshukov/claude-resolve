@@ -100,7 +100,12 @@ async function handleClaudeSend(_event, text) {
         claudeProcess = null;
     }
 
-    claudeProcess = spawn(CLAUDE_PATH, ['-p', text], {
+    claudeProcess = spawn(CLAUDE_PATH, [
+        '-p', text,
+        '--output-format', 'text',
+        '--permission-mode', 'acceptEdits',
+        '--no-session-persistence'
+    ], {
         shell: true,
         stdio: ['ignore', 'pipe', 'pipe']
     });

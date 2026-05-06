@@ -48,7 +48,7 @@ body {
 
 .message.user {
     background: var(--color-user-bubble);
-    color: var(--color-accent);
+    color: var(--color-text);
 }
 
 .message.assistant {
