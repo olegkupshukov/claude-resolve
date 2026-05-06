@@ -37,6 +37,23 @@ body {
     padding: var(--gap-md);
 }
 
+#output::-webkit-scrollbar {
+    width: var(--gap-sm);
+}
+
+#output::-webkit-scrollbar-track {
+    background: var(--color-bg);
+}
+
+#output::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+#output::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+}
+
 .message {
     margin-bottom: var(--gap-md);
     padding: var(--gap-sm) var(--gap-md);

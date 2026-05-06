@@ -15,6 +15,7 @@ let mainWindow = null;
 let resolveObj = null;
 let projectManagerObj = null;
 let claudeProcess = null;
+let stdoutBuffer = '';
 
 async function initResolveInterface() {
     const isSuccess = await WorkflowIntegration.Initialize(PLUGIN_ID);
@@ -94,40 +95,74 @@ async function handleGetCurrentTimeline() {
     return await timeline.GetName();
 }
 
-async function handleClaudeSend(_event, text) {
-    if (claudeProcess) {
-        claudeProcess.kill();
-        claudeProcess = null;
-    }
+function spawnClaude() {
+    stdoutBuffer = '';
 
     claudeProcess = spawn(CLAUDE_PATH, [
-        '-p', text,
-        '--output-format', 'text',
         '--permission-mode', 'acceptEdits',
-        '--no-session-persistence'
+        '--no-session-persistence',
+        '--output-format', 'stream-json'
     ], {
         shell: true,
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe']
     });
 
-    claudeProcess.stdout.on('data', (data) => {
-        mainWindow.webContents.send('claude:stdout', data.toString());
+    claudeProcess.stdout.on('data', (chunk) => {
+        stdoutBuffer += chunk.toString();
+        const lines = stdoutBuffer.split('\n');
+        stdoutBuffer = lines.pop();
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+                const msg = JSON.parse(line);
+                handleStreamMessage(msg);
+            } catch (_e) {
+                mainWindow.webContents.send('claude:stdout', line);
+            }
+        }
     });
 
     claudeProcess.stderr.on('data', (data) => {
         mainWindow.webContents.send('claude:stderr', data.toString());
     });
 
-    claudeProcess.on('close', (code) => {
-        mainWindow.webContents.send('claude:done', code);
+    claudeProcess.on('close', () => {
         claudeProcess = null;
+        stdoutBuffer = '';
     });
 
     claudeProcess.on('error', (err) => {
         mainWindow.webContents.send('claude:stderr', err.message);
-        mainWindow.webContents.send('claude:done', 1);
         claudeProcess = null;
     });
+}
+
+function handleStreamMessage(msg) {
+    if (msg.type === 'assistant') {
+        const content = msg.message?.content || msg.content;
+        if (typeof content === 'string') {
+            mainWindow.webContents.send('claude:stdout', content);
+        } else if (Array.isArray(content)) {
+            for (const block of content) {
+                if (block.type === 'text' && block.text) {
+                    mainWindow.webContents.send('claude:stdout', block.text);
+                }
+            }
+        }
+    } else if (msg.type === 'result') {
+        if (msg.result) {
+            mainWindow.webContents.send('claude:stdout', msg.result);
+        }
+        mainWindow.webContents.send('claude:done', 0);
+    }
+}
+
+async function handleClaudeSend(_event, text) {
+    if (!claudeProcess) {
+        spawnClaude();
+    }
+    claudeProcess.stdin.write(text + '\n');
 }
 
 function registerIpcHandlers() {
@@ -163,6 +198,7 @@ function createWindow() {
 app.whenReady().then(() => {
     registerIpcHandlers();
     createWindow();
+    spawnClaude();
 });
 
 app.on('window-all-closed', () => {
