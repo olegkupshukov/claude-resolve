@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Claude Resolve</title>
+    <link rel="stylesheet" type="text/css" href="./css/styles.css" />
+    <script type="text/javascript" src="./renderer.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Claude Resolve</h1>
+        <p class="subtitle">AI-powered motion graphics for DaVinci Resolve</p>
+    </header>
+
+    <section id="status">
+        <div class="status-row">
+            <span class="label">Project:</span>
+            <span id="projectName" class="value">--</span>
+        </div>
+        <div class="status-row">
+            <span class="label">Page:</span>
+            <span id="currentPage" class="value">--</span>
+        </div>
+        <div class="status-row">
+            <span class="label">Timeline:</span>
+            <span id="currentTimeline" class="value">--</span>
+        </div>
+    </section>
+
+    <section id="actions">
+        <button id="btnRefresh" class="btn" onclick="refreshStatus()">Refresh Status</button>
+    </section>
+</body>
+</html>

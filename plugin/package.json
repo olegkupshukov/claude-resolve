@@ -1,0 +1,9 @@
+{
+    "name": "claude-resolve",
+    "version": "0.1.0",
+    "description": "AI-powered motion graphics generator and assistant for DaVinci Resolve",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron ."
+    }
+}
