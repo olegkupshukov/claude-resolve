@@ -18,3 +18,10 @@ contextBridge.exposeInMainWorld('resolveAPI', {
     // Lifecycle
     cleanup: () => ipcRenderer.invoke('resolve:cleanup')
 });
+
+contextBridge.exposeInMainWorld('claudeAPI', {
+    sendPrompt: (text) => ipcRenderer.invoke('claude:send', text),
+    onOutput: (callback) => ipcRenderer.on('claude:stdout', (_e, data) => callback(data)),
+    onError: (callback) => ipcRenderer.on('claude:stderr', (_e, data) => callback(data)),
+    onDone: (callback) => ipcRenderer.on('claude:done', (_e, code) => callback(code))
+});

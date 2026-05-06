@@ -4,14 +4,17 @@
 // Renderer communicates through preload.js (contextBridge / ipcMain.handle).
 
 const { app, BrowserWindow, ipcMain } = require('electron');
+const { spawn } = require('child_process');
 const path = require('path');
 const WorkflowIntegration = require('./WorkflowIntegration.node');
 
 const PLUGIN_ID = 'com.clauderesolve.plugin';
+const CLAUDE_PATH = path.join(process.env.APPDATA, 'npm', 'claude.cmd');
 
 let mainWindow = null;
 let resolveObj = null;
 let projectManagerObj = null;
+let claudeProcess = null;
 
 async function initResolveInterface() {
     const isSuccess = await WorkflowIntegration.Initialize(PLUGIN_ID);
@@ -91,25 +94,61 @@ async function handleGetCurrentTimeline() {
     return await timeline.GetName();
 }
 
+async function handleClaudeSend(_event, text) {
+    if (claudeProcess) {
+        claudeProcess.kill();
+        claudeProcess = null;
+    }
+
+    claudeProcess = spawn(CLAUDE_PATH, ['-p', text], { shell: true });
+
+    claudeProcess.stdout.on('data', (data) => {
+        mainWindow.webContents.send('claude:stdout', data.toString());
+    });
+
+    claudeProcess.stderr.on('data', (data) => {
+        mainWindow.webContents.send('claude:stderr', data.toString());
+    });
+
+    claudeProcess.on('close', (code) => {
+        mainWindow.webContents.send('claude:done', code);
+        claudeProcess = null;
+    });
+
+    claudeProcess.on('error', (err) => {
+        mainWindow.webContents.send('claude:stderr', err.message);
+        mainWindow.webContents.send('claude:done', 1);
+        claudeProcess = null;
+    });
+}
+
 function registerIpcHandlers() {
     ipcMain.handle('resolve:openPage', handleOpenPage);
     ipcMain.handle('resolve:getCurrentPage', handleGetCurrentPage);
     ipcMain.handle('resolve:getProjectName', handleGetProjectName);
     ipcMain.handle('resolve:getCurrentTimeline', handleGetCurrentTimeline);
     ipcMain.handle('resolve:cleanup', cleanupResolveInterface);
+    ipcMain.handle('claude:send', handleClaudeSend);
 }
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 900,
+        width: 500,
         height: 700,
+        alwaysOnTop: true,
         useContentSize: true,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js')
         }
     });
 
-    mainWindow.on('close', () => app.quit());
+    mainWindow.on('close', () => {
+        if (claudeProcess) {
+            claudeProcess.kill();
+            claudeProcess = null;
+        }
+        app.quit();
+    });
     mainWindow.loadFile('index.html');
 }
 

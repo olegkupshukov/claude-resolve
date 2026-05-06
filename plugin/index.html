@@ -7,28 +7,19 @@
     <script type="text/javascript" src="./renderer.js"></script>
 </head>
 <body>
-    <header>
-        <h1>Claude Resolve</h1>
-        <p class="subtitle">AI-powered motion graphics for DaVinci Resolve</p>
-    </header>
+    <div id="status-bar">
+        <span id="projectName">--</span>
+        <span class="sep">/</span>
+        <span id="currentPage">--</span>
+        <span class="sep">/</span>
+        <span id="currentTimeline">--</span>
+    </div>
 
-    <section id="status">
-        <div class="status-row">
-            <span class="label">Project:</span>
-            <span id="projectName" class="value">--</span>
-        </div>
-        <div class="status-row">
-            <span class="label">Page:</span>
-            <span id="currentPage" class="value">--</span>
-        </div>
-        <div class="status-row">
-            <span class="label">Timeline:</span>
-            <span id="currentTimeline" class="value">--</span>
-        </div>
-    </section>
+    <div id="output"></div>
 
-    <section id="actions">
-        <button id="btnRefresh" class="btn" onclick="refreshStatus()">Refresh Status</button>
-    </section>
+    <div id="input-bar">
+        <input type="text" id="prompt" placeholder="Ask Claude..." autofocus />
+        <button id="btn-send" class="btn">Send</button>
+    </div>
 </body>
 </html>
