@@ -99,9 +99,12 @@ function spawnClaude() {
     stdoutBuffer = '';
 
     claudeProcess = spawn(CLAUDE_PATH, [
+        '-p',
+        '--input-format', 'stream-json',
+        '--output-format', 'stream-json',
+        '--verbose',
         '--permission-mode', 'acceptEdits',
-        '--no-session-persistence',
-        '--output-format', 'stream-json'
+        '--no-session-persistence'
     ], {
         shell: true,
         stdio: ['pipe', 'pipe', 'pipe']
@@ -140,10 +143,8 @@ function spawnClaude() {
 
 function handleStreamMessage(msg) {
     if (msg.type === 'assistant') {
-        const content = msg.message?.content || msg.content;
-        if (typeof content === 'string') {
-            mainWindow.webContents.send('claude:stdout', content);
-        } else if (Array.isArray(content)) {
+        const content = msg.message?.content;
+        if (Array.isArray(content)) {
             for (const block of content) {
                 if (block.type === 'text' && block.text) {
                     mainWindow.webContents.send('claude:stdout', block.text);
@@ -151,10 +152,7 @@ function handleStreamMessage(msg) {
             }
         }
     } else if (msg.type === 'result') {
-        if (msg.result) {
-            mainWindow.webContents.send('claude:stdout', msg.result);
-        }
-        mainWindow.webContents.send('claude:done', 0);
+        mainWindow.webContents.send('claude:done', msg.is_error ? 1 : 0);
     }
 }
 
@@ -162,7 +160,8 @@ async function handleClaudeSend(_event, text) {
     if (!claudeProcess) {
         spawnClaude();
     }
-    claudeProcess.stdin.write(text + '\n');
+    const msg = JSON.stringify({ type: 'user', message: { role: 'user', content: text } });
+    claudeProcess.stdin.write(msg + '\n');
 }
 
 function registerIpcHandlers() {

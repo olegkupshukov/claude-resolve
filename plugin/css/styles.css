@@ -38,7 +38,7 @@ body {
 }
 
 #output::-webkit-scrollbar {
-    width: var(--gap-sm);
+    width: var(--gap-xs);
 }
 
 #output::-webkit-scrollbar-track {
@@ -76,6 +76,7 @@ body {
 .message.thinking {
     color: var(--color-text-muted);
     font-style: italic;
+    animation: pulse 1.5s var(--ease-in-out) infinite;
 }
 
 .message.error {
@@ -129,8 +130,27 @@ body {
     background: var(--color-accent-active);
 }
 
+#prompt:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .btn {
         transition: background var(--duration-normal) ease;
+    }
+    .message.thinking {
+        animation: none;
     }
 }

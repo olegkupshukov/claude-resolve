@@ -32,6 +32,14 @@ async function refreshStatus() {
     document.getElementById('currentTimeline').textContent = tl || '--';
 }
 
+function setInputEnabled(enabled) {
+    const input = document.getElementById('prompt');
+    const btn = document.getElementById('btn-send');
+    input.disabled = !enabled;
+    btn.disabled = !enabled;
+    if (enabled) input.focus();
+}
+
 function sendPrompt() {
     const input = document.getElementById('prompt');
     const text = input.value.trim();
@@ -39,6 +47,7 @@ function sendPrompt() {
 
     input.value = '';
     isProcessing = true;
+    setInputEnabled(false);
     addMessage(text, 'user');
 
     const output = document.getElementById('output');
@@ -71,6 +80,7 @@ function handleDone(code) {
     }
     currentResponse = null;
     isProcessing = false;
+    setInputEnabled(true);
 }
 
 function addMessage(text, type) {
