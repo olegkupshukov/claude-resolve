@@ -100,7 +100,10 @@ async function handleClaudeSend(_event, text) {
         claudeProcess = null;
     }
 
-    claudeProcess = spawn(CLAUDE_PATH, ['-p', text], { shell: true });
+    claudeProcess = spawn(CLAUDE_PATH, ['-p', text], {
+        shell: true,
+        stdio: ['ignore', 'pipe', 'pipe']
+    });
 
     claudeProcess.stdout.on('data', (data) => {
         mainWindow.webContents.send('claude:stdout', data.toString());
