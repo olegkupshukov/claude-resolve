@@ -141,6 +141,19 @@ body {
     pointer-events: none;
 }
 
+.btn-stop {
+    background: var(--color-border);
+}
+
+.btn-stop:hover {
+    background: var(--color-text-muted);
+}
+
+.btn-stop:active {
+    transform: scale(0.97);
+    background: var(--color-text-muted);
+}
+
 .btn-install {
     display: block;
     margin-top: var(--gap-sm);

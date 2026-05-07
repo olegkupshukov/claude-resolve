@@ -4,7 +4,7 @@
 // Renderer communicates through preload.js (contextBridge / ipcMain.handle).
 
 const { app, BrowserWindow, ipcMain } = require('electron');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const WorkflowIntegration = require('./WorkflowIntegration.node');
@@ -23,6 +23,7 @@ let projectManagerObj = null;
 let claudeProcess = null;
 let stdoutBuffer = '';
 let isContextTurn = false;
+let isAborting = false;
 
 async function initResolveInterface() {
     const isSuccess = await WorkflowIntegration.Initialize(PLUGIN_ID);
@@ -140,6 +141,12 @@ function spawnClaude() {
     claudeProcess.on('close', () => {
         claudeProcess = null;
         stdoutBuffer = '';
+        if (isAborting) {
+            isAborting = false;
+            mainWindow.webContents.send('claude:done', 2);
+            spawnClaude();
+            sendContextMessage();
+        }
     });
 
     claudeProcess.on('error', (err) => {
@@ -305,11 +312,55 @@ async function handleOverlaySave(_event, { manifestJSON, componentJS, templateNa
 }
 
 async function handleInsertTitle(_event, titleName) {
+    const resolve = await getResolve();
+    if (!resolve) {
+        console.error('InsertTitle: Resolve not available');
+        return null;
+    }
+
+    // Titles can only be inserted on the Edit page
+    const currentPage = await resolve.GetCurrentPage();
+    if (currentPage !== 'edit') {
+        const switched = await resolve.OpenPage('edit');
+        if (!switched) {
+            console.error('InsertTitle: failed to switch to Edit page');
+            return null;
+        }
+    }
+
     const project = await getCurrentProject();
-    if (!project) return null;
+    if (!project) {
+        console.error('InsertTitle: no current project');
+        return null;
+    }
     const timeline = await project.GetCurrentTimeline();
-    if (!timeline) return null;
-    return await timeline.InsertTitleIntoTimeline(titleName);
+    if (!timeline) {
+        console.error('InsertTitle: no current timeline');
+        return null;
+    }
+
+    // Wait for Resolve to rescan template directory after new files were written
+    await new Promise(r => setTimeout(r, 2000));
+
+    // OGraf templates load through Fusion's OGrafLoader — try as Fusion title first
+    let item = await timeline.InsertFusionTitleIntoTimeline(titleName);
+    if (!item) {
+        // Fallback: try standard title insertion
+        item = await timeline.InsertTitleIntoTimeline(titleName);
+    }
+    console.log(`InsertTitle("${titleName}"): ${item ? 'success' : 'failed — title not found in Effects Library'}`);
+    return item;
+}
+
+function handleClaudeAbort() {
+    if (!claudeProcess) return;
+    isAborting = true;
+    // Kill entire process tree on Windows to avoid orphan node processes
+    if (process.platform === 'win32') {
+        exec(`taskkill /F /T /PID ${claudeProcess.pid}`);
+    } else {
+        claudeProcess.kill();
+    }
 }
 
 async function handleClaudeSend(_event, text) {
@@ -327,6 +378,7 @@ function registerIpcHandlers() {
     ipcMain.handle('resolve:getCurrentTimeline', handleGetCurrentTimeline);
     ipcMain.handle('resolve:cleanup', cleanupResolveInterface);
     ipcMain.handle('claude:send', handleClaudeSend);
+    ipcMain.handle('claude:abort', handleClaudeAbort);
     ipcMain.handle('overlay:save', handleOverlaySave);
     ipcMain.handle('resolve:insertTitle', handleInsertTitle);
 }

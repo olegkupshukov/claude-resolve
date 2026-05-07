@@ -5,6 +5,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     await refreshStatus();
 
     document.getElementById('btn-send').addEventListener('click', sendPrompt);
+    document.getElementById('btn-stop').addEventListener('click', stopResponse);
     document.getElementById('prompt').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -34,9 +35,11 @@ async function refreshStatus() {
 
 function setInputEnabled(enabled) {
     const input = document.getElementById('prompt');
-    const btn = document.getElementById('btn-send');
+    const btnSend = document.getElementById('btn-send');
+    const btnStop = document.getElementById('btn-stop');
     input.disabled = !enabled;
-    btn.disabled = !enabled;
+    btnSend.hidden = !enabled;
+    btnStop.hidden = enabled;
     if (enabled) input.focus();
 }
 
@@ -60,6 +63,10 @@ function sendPrompt() {
     window.claudeAPI.sendPrompt(text);
 }
 
+function stopResponse() {
+    window.claudeAPI.abort();
+}
+
 function handleOutput(data) {
     if (!currentResponse) return;
     if (currentResponse.classList.contains('thinking')) {
@@ -73,9 +80,11 @@ function handleOutput(data) {
 function handleDone(code) {
     if (currentResponse && currentResponse.classList.contains('thinking')) {
         currentResponse.classList.remove('thinking');
-        currentResponse.textContent = '(No response)';
+        currentResponse.textContent = code === 2 ? '(Stopped)' : '(No response)';
+    } else if (code === 2 && currentResponse) {
+        currentResponse.textContent += '\n(Stopped)';
     }
-    if (code !== 0 && currentResponse) {
+    if (code === 1 && currentResponse) {
         currentResponse.classList.add('error');
     }
 
@@ -113,7 +122,11 @@ async function installOGraf(btn, parsed) {
     btn.textContent = 'Installing...';
     try {
         await window.overlayAPI.save(parsed);
-        const item = await window.overlayAPI.insertTitle(parsed.templateName);
+        // Use the manifest display name — Resolve indexes titles by this field
+        const manifest = JSON.parse(parsed.manifestJSON);
+        const displayName = manifest.name || parsed.templateName;
+        btn.textContent = 'Waiting for Resolve...';
+        const item = await window.overlayAPI.insertTitle(displayName);
         btn.textContent = item ? 'Added to Timeline' : 'Installed (add manually)';
     } catch (err) {
         btn.textContent = 'Install Failed';

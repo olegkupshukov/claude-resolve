@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('overlayAPI', {
 
 contextBridge.exposeInMainWorld('claudeAPI', {
     sendPrompt: (text) => ipcRenderer.invoke('claude:send', text),
+    abort: () => ipcRenderer.invoke('claude:abort'),
     onOutput: (callback) => ipcRenderer.on('claude:stdout', (_e, data) => callback(data)),
     onError: (callback) => ipcRenderer.on('claude:stderr', (_e, data) => callback(data)),
     onDone: (callback) => ipcRenderer.on('claude:done', (_e, code) => callback(code))
