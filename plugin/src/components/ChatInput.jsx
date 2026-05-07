@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 
-export default function ChatInput({ onSend, onStop, isProcessing }) {
+export default function ChatInput({ onSend, onStop, isProcessing, sidebarOpen, onToggleSidebar }) {
     const inputRef = useRef(null);
 
     useEffect(() => {
@@ -25,6 +25,13 @@ export default function ChatInput({ onSend, onStop, isProcessing }) {
 
     return (
         <div id="input-bar">
+            <button
+                className={'btn-gear' + (sidebarOpen ? ' btn-gear-active' : '')}
+                onClick={onToggleSidebar}
+                aria-label="Settings"
+            >
+                &#9881;
+            </button>
             <input
                 ref={inputRef}
                 type="text"

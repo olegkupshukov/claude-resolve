@@ -39,10 +39,17 @@ body, #root {
 .app-body {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     min-height: 0;
-    position: relative;
     overflow: hidden;
+}
+
+.app-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
 }
 
 #output {
@@ -278,16 +285,12 @@ body, #root {
 /* Sidebar */
 
 .sidebar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 200px;
-    z-index: 10;
+    flex-shrink: 0;
+    width: 220px;
     background: var(--color-panel);
     border-right: 1px solid var(--color-border);
     overflow-y: auto;
-    animation: sidebarSlideIn 250ms var(--ease-out) both;
+    animation: sidebarFadeIn 250ms var(--ease-out) both;
 }
 
 .sidebar::-webkit-scrollbar {
@@ -353,11 +356,37 @@ body, #root {
     color: var(--color-text-muted);
 }
 
-.sidebar-toggle {
-    position: absolute;
-    top: var(--gap-sm);
-    left: var(--gap-sm);
-    z-index: 5;
+/* Gear button */
+
+.btn-gear {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: var(--gap-sm);
+    font-size: var(--font-size-base);
+    line-height: 1;
+    transition: background var(--duration-normal) var(--ease-out),
+                color var(--duration-normal) var(--ease-out),
+                border-color var(--duration-normal) var(--ease-out);
+}
+
+.btn-gear-active {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border-color: var(--color-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-gear:not(.btn-gear-active):hover {
+        color: var(--color-text);
+        border-color: var(--color-text-muted);
+    }
+}
+
+.btn-gear:active {
+    transform: scale(0.95);
 }
 
 /* Segmented control */
@@ -678,9 +707,9 @@ body, #root {
     to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes sidebarSlideIn {
-    from { transform: translateX(-100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+@keyframes sidebarFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 @keyframes pulse {
@@ -706,6 +735,9 @@ body, #root {
     }
     .sidebar {
         animation: none;
+    }
+    .btn-gear {
+        transition: none;
     }
     .mode-card {
         transition: border-color var(--duration-normal) ease;

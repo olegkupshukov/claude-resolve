@@ -35,6 +35,9 @@ app.whenReady().then(async () => {
     setupClaudeHandlers(ipcMain, mainWindow);
     setupOverlayHandlers(ipcMain, mainWindow);
     setupConfigHandlers(ipcMain);
+    ipcMain.handle('window:resize', (_event, { width, height }) => {
+        mainWindow.setSize(width, height);
+    });
 });
 
 app.on('window-all-closed', () => {

@@ -49,6 +49,10 @@ contextBridge.exposeInMainWorld('claudeAPI', {
     onStatus: (callback) => ipcRenderer.on('claude:status', (_e, data) => callback(data))
 });
 
+contextBridge.exposeInMainWorld('windowAPI', {
+    resize: ({ width, height }) => ipcRenderer.invoke('window:resize', { width, height })
+});
+
 contextBridge.exposeInMainWorld('configAPI', {
     get: () => ipcRenderer.invoke('config:get'),
     set: (partial) => ipcRenderer.invoke('config:set', partial)

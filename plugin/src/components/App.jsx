@@ -145,45 +145,48 @@ export default function App() {
         }
     }
 
+    async function handleToggleSidebar() {
+        const next = !sidebarOpen;
+        await window.windowAPI.resize({ width: next ? 720 : 500, height: 700 });
+        setSidebarOpen(next);
+    }
+
     const showWelcome = authState !== 'ready' || welcomed;
 
     return (
         <>
             <StatusBar />
             <div className="app-body">
-                {!showWelcome && (
-                    <button
-                        className="btn-icon sidebar-toggle"
-                        onClick={() => setSidebarOpen(v => !v)}
-                        title="Menu"
-                    >&#9776;</button>
-                )}
-                {showWelcome ? (
-                    <WelcomeScreen
-                        authState={authState}
-                        onAuthStateChange={setAuthState}
-                        onStart={() => setAuthState('ready')}
-                        onPrompt={handleSend}
-                        mode={config.mode}
-                        onModeSwitch={handleModeSwitch}
-                    />
-                ) : (
-                    <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} />
-                )}
                 {sidebarOpen && (
                     <Sidebar
                         isOpen={sidebarOpen}
                         config={config}
                         onConfigChange={handleConfigChange}
                         onModeSwitch={handleModeSwitch}
-                        onClose={() => setSidebarOpen(false)}
+                        onClose={handleToggleSidebar}
                     />
                 )}
+                <div className="app-main">
+                    {showWelcome ? (
+                        <WelcomeScreen
+                            authState={authState}
+                            onAuthStateChange={setAuthState}
+                            onStart={() => setAuthState('ready')}
+                            onPrompt={handleSend}
+                            mode={config.mode}
+                            onModeSwitch={handleModeSwitch}
+                        />
+                    ) : (
+                        <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} />
+                    )}
+                </div>
             </div>
             <ChatInput
                 onSend={handleSend}
                 onStop={handleStop}
                 isProcessing={isProcessing}
+                sidebarOpen={sidebarOpen}
+                onToggleSidebar={handleToggleSidebar}
             />
         </>
     );
