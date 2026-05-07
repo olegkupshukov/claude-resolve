@@ -78,18 +78,82 @@ async function handleOverlaySave(_event, { manifestJSON, componentJS, templateNa
 
 let mainWindow = null;
 
+async function findOrCreateBin(mediaPool, binName) {
+    const root = await mediaPool.GetRootFolder();
+    const subs = await root.GetSubFolderList();
+    for (const folder of subs) {
+        const name = await folder.GetName();
+        if (name === binName) return folder;
+    }
+    return await mediaPool.AddSubFolder(root, binName);
+}
+
+function timecodeToFrame(tc, fps) {
+    // tc format: "HH:MM:SS:FF" or "HH:MM:SS;FF" (drop-frame)
+    const parts = tc.replace(';', ':').split(':').map(Number);
+    if (parts.length !== 4) return 0;
+    return ((parts[0] * 3600 + parts[1] * 60 + parts[2]) * fps) + parts[3];
+}
+
+async function findEmptyTrack(timeline, atFrame, clipFrames) {
+    const trackCount = await timeline.GetTrackCount('video');
+    // Search from V2 upward for an empty slot at playhead
+    for (let t = 2; t <= trackCount; t++) {
+        const items = await timeline.GetItemListInTrack('video', t);
+        if (!items || items.length === 0) return t;
+        let occupied = false;
+        for (const item of items) {
+            const start = await item.GetStart();
+            const end = await item.GetEnd();
+            // Overlap check: clip would occupy [atFrame, atFrame+clipFrames)
+            if (atFrame < end && (atFrame + clipFrames) > start) {
+                occupied = true;
+                break;
+            }
+        }
+        if (!occupied) return t;
+    }
+    // All tracks occupied — add a new one
+    await timeline.AddTrack('video');
+    return trackCount + 1;
+}
+
 async function importToTimeline(movPath) {
     const resolve = await getResolve();
     if (!resolve) throw new Error('Resolve not connected');
 
-    const mediaStorage = await resolve.GetMediaStorage();
-    const clips = await mediaStorage.AddItemListToMediaPool([movPath]);
-    if (!clips || clips.length === 0) throw new Error('Failed to import to MediaPool');
-
     const project = await getCurrentProject();
     const mediaPool = await project.GetMediaPool();
-    const clipInfos = clips.map(c => ({ mediaPoolItem: c, trackIndex: 2 }));
-    await mediaPool.AppendToTimeline(clipInfos);
+
+    // Import into "Claude Resolve" bin
+    const prevFolder = await mediaPool.GetCurrentFolder();
+    const bin = await findOrCreateBin(mediaPool, 'Claude Resolve');
+    await mediaPool.SetCurrentFolder(bin);
+    const clips = await mediaPool.ImportMedia([movPath]);
+    await mediaPool.SetCurrentFolder(prevFolder);
+    if (!clips || clips.length === 0) throw new Error('Failed to import to MediaPool');
+
+    // Smart timeline placement
+    const timeline = await project.GetCurrentTimeline();
+    if (!timeline) throw new Error('No active timeline');
+
+    const tc = await timeline.GetCurrentTimecode();
+    const fpsStr = await timeline.GetSetting('timelineFrameRate');
+    const fps = parseFloat(fpsStr) || 25;
+    const playheadFrame = timecodeToFrame(tc, fps);
+
+    const clip = clips[0];
+    const clipProps = await clip.GetClipProperty();
+    const clipFrames = parseInt(clipProps.Frames) || Math.round(fps * 5);
+
+    const trackIndex = await findEmptyTrack(timeline, playheadFrame, clipFrames);
+
+    await mediaPool.AppendToTimeline([{
+        mediaPoolItem: clip,
+        trackIndex,
+        recordFrame: playheadFrame,
+        mediaType: 1
+    }]);
 }
 
 async function handleRenderMov(_event, { html, fps = 25, width = 1920, height = 1080 }) {

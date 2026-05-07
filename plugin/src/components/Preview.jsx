@@ -68,15 +68,18 @@ function HTMLPreview({ parsed }) {
 
     const srcdoc = useMemo(() => {
         const playScript = `<script>
-(function(){
+document.addEventListener('DOMContentLoaded',function(){
 var fps=25,dur=window.getAnimationDuration(),total=Math.ceil(dur*fps),f=0,running=true;
 function tick(){if(!running){requestAnimationFrame(tick);return}
 window.renderFrame(f,fps);f=(f+1)%total;requestAnimationFrame(tick)}
 window.addEventListener('message',function(e){if(e.data==='play')running=true;else if(e.data==='pause')running=false});
 tick();
-})();
+});
 <\/script>`;
-        return parsed.html + playScript;
+        const html = parsed.html;
+        if (html.includes('</body>')) return html.replace('</body>', playScript + '</body>');
+        if (html.includes('</html>')) return html.replace('</html>', playScript + '</html>');
+        return html + playScript;
     }, [parsed]);
 
     function togglePlay() {
