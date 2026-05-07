@@ -18,7 +18,9 @@ function shortPath(p) {
     return name.length > 24 ? name.slice(0, 21) + '...' : name;
 }
 
-export default function StatusIndicator({ tool, tokens }) {
+const MODEL_LABELS = { sonnet: 'Sonnet', opus: 'Opus' };
+
+export default function StatusIndicator({ tool, tokens, model }) {
     const [elapsed, setElapsed] = useState(0);
     const startRef = useRef(Date.now());
 
@@ -33,6 +35,7 @@ export default function StatusIndicator({ tool, tokens }) {
     const parts = ['Thinking...'];
     if (elapsed > 0) parts.push(`${elapsed}s`);
     if (tokens > 0) parts.push(`${tokens} tokens`);
+    if (model) parts.push(MODEL_LABELS[model] || model);
     if (tool) {
         const action = TOOL_LABELS[tool.name] || tool.name;
         const file = shortPath(tool.file);

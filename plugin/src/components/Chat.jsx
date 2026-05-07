@@ -71,7 +71,7 @@ function RenderMovAction({ parsed }) {
     return <button className="btn btn-install error" disabled title={errorMsg}>Render Failed: {errorMsg}</button>;
 }
 
-function MessageBubble({ message, activeTool, tokenCount }) {
+function MessageBubble({ message, activeTool, tokenCount, model }) {
     let className = 'message ' + message.type;
     if (message.isThinking) className += ' thinking';
     if (message.isError) className += ' error';
@@ -83,7 +83,7 @@ function MessageBubble({ message, activeTool, tokenCount }) {
     return (
         <div className={className}>
             {message.isThinking
-                ? <StatusIndicator tool={activeTool} tokens={tokenCount} />
+                ? <StatusIndicator tool={activeTool} tokens={tokenCount} model={model} />
                 : parsed
                     ? <>
                         <div className="template-card-header">
@@ -107,7 +107,7 @@ function MessageBubble({ message, activeTool, tokenCount }) {
     );
 }
 
-export default function Chat({ messages, activeTool, tokenCount }) {
+export default function Chat({ messages, activeTool, tokenCount, model }) {
     const outputRef = useRef(null);
 
     useEffect(() => {
@@ -121,7 +121,7 @@ export default function Chat({ messages, activeTool, tokenCount }) {
     return (
         <div id="output" ref={outputRef}>
             {messages.map(msg => (
-                <MessageBubble key={msg.id} message={msg} activeTool={msg.isThinking ? activeTool : null} tokenCount={msg.isThinking ? tokenCount : 0} />
+                <MessageBubble key={msg.id} message={msg} activeTool={msg.isThinking ? activeTool : null} tokenCount={msg.isThinking ? tokenCount : 0} model={model} />
             ))}
         </div>
     );

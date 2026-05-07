@@ -5,6 +5,13 @@ export default function SidebarSettings({ config, onConfigChange }) {
         <div className="sidebar-section">
             <label className="sidebar-label">Settings</label>
             <div className="sidebar-setting">
+                <span>Model</span>
+                <select value={config.model || 'sonnet'} onChange={e => onConfigChange({ model: e.target.value })}>
+                    <option value="sonnet">Sonnet (fast)</option>
+                    <option value="opus">Opus (smart)</option>
+                </select>
+            </div>
+            <div className="sidebar-setting">
                 <span>FPS</span>
                 <select value={config.fps} onChange={e => onConfigChange({ fps: Number(e.target.value) })}>
                     <option value={24}>24</option>

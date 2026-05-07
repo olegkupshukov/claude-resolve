@@ -130,7 +130,14 @@ export default function App() {
 
     async function handleConfigChange(partial) {
         const updated = await window.configAPI.set(partial);
+        const modelChanged = partial.model && partial.model !== config.model;
         setConfig(updated);
+        if (modelChanged && !welcomed) {
+            setMessages([]);
+            setIsProcessing(false);
+            setActiveTool(null);
+            window.claudeAPI.restart();
+        }
     }
 
     async function handleModeSwitch(newMode) {
@@ -178,7 +185,7 @@ export default function App() {
                             onModeSwitch={handleModeSwitch}
                         />
                     ) : (
-                        <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} />
+                        <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} model={config.model} />
                     )}
                 </div>
             </div>

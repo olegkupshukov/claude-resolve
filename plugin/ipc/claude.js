@@ -5,6 +5,11 @@ const { readConfig } = require('./config');
 
 const CLAUDE_PATH = path.join(process.env.APPDATA, 'npm', 'claude.cmd');
 
+const MODEL_IDS = {
+    sonnet: 'claude-sonnet-4-20250514',
+    opus: 'claude-opus-4-20250514'
+};
+
 let mainWindow = null;
 let claudeProcess = null;
 let stdoutBuffer = '';
@@ -16,8 +21,12 @@ function spawnClaude() {
     if (claudeProcess) return;
     stdoutBuffer = '';
 
+    const config = readConfig();
+    const modelId = MODEL_IDS[config.model] || MODEL_IDS.sonnet;
+
     claudeProcess = spawn(CLAUDE_PATH, [
         '-p',
+        '--model', modelId,
         '--input-format', 'stream-json',
         '--output-format', 'stream-json',
         '--verbose',

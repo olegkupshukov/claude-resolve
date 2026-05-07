@@ -6,7 +6,7 @@ const CONFIG_DIR = path.join(
     'Blackmagic Design', 'DaVinci Resolve', 'Claude Resolve'
 );
 const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
-const DEFAULTS = { mode: 'mov', fps: 25, width: 1920, height: 1080 };
+const DEFAULTS = { mode: 'mov', model: 'sonnet', fps: 25, width: 1920, height: 1080 };
 
 function readConfig() {
     try {
