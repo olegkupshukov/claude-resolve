@@ -1,3 +1,6 @@
 .claude/
 .env
 node_modules/
+__pycache__/
+*.mov
+config.json
