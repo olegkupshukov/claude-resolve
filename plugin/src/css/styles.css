@@ -4,11 +4,11 @@
     box-sizing: border-box;
 }
 
-html, body {
+html, body, #root {
     height: 100%;
 }
 
-body {
+body, #root {
     display: flex;
     flex-direction: column;
     font-family: var(--font-family);
@@ -33,6 +33,7 @@ body {
 
 #output {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: var(--gap-md);
 }
