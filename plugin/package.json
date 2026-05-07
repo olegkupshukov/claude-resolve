@@ -4,6 +4,13 @@
     "description": "AI-powered motion graphics generator and assistant for DaVinci Resolve",
     "main": "main.js",
     "scripts": {
-        "start": "electron ."
+        "start": "electron .",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-react": "^6.0.1",
+        "react": "^19.2.6",
+        "react-dom": "^19.2.6",
+        "vite": "^8.0.11"
     }
 }

@@ -402,7 +402,7 @@ function createWindow() {
         }
         app.quit();
     });
-    mainWindow.loadFile('index.html');
+    mainWindow.loadFile('dist/index.html');
 }
 
 app.whenReady().then(async () => {
