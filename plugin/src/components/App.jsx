@@ -3,6 +3,7 @@ import StatusBar from './StatusBar';
 import Chat from './Chat';
 import ChatInput from './ChatInput';
 import TemplateManager from './TemplateManager';
+import WelcomeScreen from './WelcomeScreen';
 
 function tryParseOGrafResponse(text) {
     const jsonMatch = text.match(/```json\s*\n\/\/ FILE:\s*(\S+\.ograf\.json)\s*\n([\s\S]*?)```/);
@@ -27,6 +28,8 @@ function tryParseStandardHTML(text) {
 }
 
 export default function App() {
+    const [authState, setAuthState] = useState('checking');
+    const [welcomed, setWelcomed] = useState(true);
     const [messages, setMessages] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -93,6 +96,13 @@ export default function App() {
 
         window.overlayAPI.syncToMediaPool().catch(() => {});
 
+        window.claudeAPI.checkAuth().then(async (result) => {
+            setAuthState(result.status);
+            if (result.status === 'ready') {
+                await window.claudeAPI.start();
+            }
+        });
+
         function handleUnload() {
             window.resolveAPI.cleanup();
         }
@@ -103,6 +113,7 @@ export default function App() {
     }, []);
 
     function handleSend(text) {
+        setWelcomed(false);
         const userId = nextId.current++;
         const assistantId = nextId.current++;
         setMessages(prev => [
@@ -120,11 +131,27 @@ export default function App() {
         window.claudeAPI.abort();
     }
 
+    const showWelcome = authState !== 'ready' || welcomed;
+
     return (
         <>
             <StatusBar />
-            <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} />
-            {templatesOpen && <TemplateManager />}
+            {showWelcome ? (
+                <WelcomeScreen
+                    authState={authState}
+                    onAuthStateChange={setAuthState}
+                    onStart={async () => {
+                        await window.claudeAPI.start();
+                        setAuthState('ready');
+                    }}
+                    onPrompt={(text) => { setWelcomed(false); handleSend(text); }}
+                />
+            ) : (
+                <>
+                    <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} />
+                    {templatesOpen && <TemplateManager />}
+                </>
+            )}
             <ChatInput
                 onSend={handleSend}
                 onStop={handleStop}

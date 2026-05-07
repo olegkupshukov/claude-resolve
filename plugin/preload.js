@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('overlayAPI', {
 });
 
 contextBridge.exposeInMainWorld('claudeAPI', {
+    checkAuth: () => ipcRenderer.invoke('claude:checkAuth'),
+    login: () => ipcRenderer.invoke('claude:login'),
+    start: () => ipcRenderer.invoke('claude:start'),
     sendPrompt: (text) => ipcRenderer.invoke('claude:send', text),
     abort: () => ipcRenderer.invoke('claude:abort'),
     onOutput: (callback) => ipcRenderer.on('claude:stdout', (_e, data) => callback(data)),

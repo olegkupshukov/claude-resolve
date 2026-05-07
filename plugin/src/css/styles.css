@@ -394,6 +394,100 @@ body, #root {
     opacity: 0.7;
 }
 
+/* Welcome screen */
+
+.welcome-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+
+.welcome-content {
+    text-align: center;
+    padding: var(--gap-lg);
+    animation: welcomeFadeIn 300ms var(--ease-out) both;
+}
+
+.welcome-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--gap-xs);
+}
+
+.welcome-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--gap-md);
+}
+
+.welcome-separator {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: var(--gap-md) auto;
+    width: 60%;
+}
+
+.welcome-chips {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-sm);
+}
+
+.welcome-chip {
+    background: var(--color-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    padding: var(--gap-sm) var(--gap-md);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    text-align: left;
+    transition: transform var(--duration-normal) var(--ease-out),
+                border-color var(--duration-normal) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .welcome-chip:hover {
+        transform: scale(1.02);
+        border-color: var(--color-text-muted);
+    }
+}
+
+.welcome-chip:active {
+    transform: scale(0.97);
+}
+
+.welcome-code {
+    display: block;
+    background: var(--color-user-bubble);
+    border-radius: var(--radius-md);
+    padding: var(--gap-sm) var(--gap-md);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    margin: var(--gap-sm) 0;
+}
+
+.btn-secondary {
+    background: var(--color-panel);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-secondary:hover {
+        border-color: var(--color-text-muted);
+    }
+}
+
+@keyframes welcomeFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
@@ -408,5 +502,11 @@ body, #root {
     }
     .status-indicator {
         transition: none;
+    }
+    .welcome-content {
+        animation: none;
+    }
+    .welcome-chip {
+        transition: border-color var(--duration-normal) ease;
     }
 }

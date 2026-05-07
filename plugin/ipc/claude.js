@@ -1,4 +1,4 @@
-const { spawn, exec } = require('child_process');
+const { spawn, exec, execSync } = require('child_process');
 const path = require('path');
 const { handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline } = require('./resolve');
 
@@ -182,10 +182,40 @@ function cleanupClaude() {
     }
 }
 
+function handleCheckAuth() {
+    try {
+        execSync(`"${CLAUDE_PATH}" --version`, { encoding: 'utf-8', shell: true, timeout: 10000 });
+    } catch {
+        return { status: 'not-installed' };
+    }
+    try {
+        execSync(`"${CLAUDE_PATH}" auth status`, { encoding: 'utf-8', shell: true, timeout: 10000 });
+        return { status: 'ready' };
+    } catch {
+        return { status: 'not-logged-in' };
+    }
+}
+
+function handleLogin() {
+    return new Promise((resolve) => {
+        const proc = spawn(CLAUDE_PATH, ['login'], { shell: true });
+        proc.on('close', (code) => resolve({ success: code === 0 }));
+        proc.on('error', () => resolve({ success: false }));
+    });
+}
+
+async function handleStart() {
+    spawnClaude();
+    await sendContextMessage();
+}
+
 function setupClaudeHandlers(ipcMain, win) {
     mainWindow = win;
     ipcMain.handle('claude:send', handleClaudeSend);
     ipcMain.handle('claude:abort', handleClaudeAbort);
+    ipcMain.handle('claude:checkAuth', handleCheckAuth);
+    ipcMain.handle('claude:login', handleLogin);
+    ipcMain.handle('claude:start', handleStart);
 }
 
-module.exports = { setupClaudeHandlers, spawnClaude, sendContextMessage, cleanupClaude };
+module.exports = { setupClaudeHandlers, cleanupClaude };
