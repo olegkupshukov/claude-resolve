@@ -164,6 +164,63 @@ body, #root {
     margin-top: var(--gap-sm);
     padding: var(--gap-xs) var(--gap-md);
     font-size: var(--font-size-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.render-progress-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--color-accent);
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+/* OGraf template card */
+
+.template-card-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--gap-sm);
+    margin-bottom: var(--gap-sm);
+}
+
+.template-card-name {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.template-card-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.code-toggle {
+    margin-top: var(--gap-sm);
+}
+
+.code-toggle summary {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    user-select: none;
+}
+
+.code-toggle summary:hover {
+    color: var(--color-text);
+}
+
+.code-block {
+    margin-top: var(--gap-xs);
+    padding: var(--gap-sm);
+    background: var(--color-user-bubble);
+    border-radius: var(--radius-md);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    overflow-x: auto;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 /* OGraf preview card */

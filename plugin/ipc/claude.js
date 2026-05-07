@@ -106,30 +106,38 @@ Current session: Project: ${projectName || 'Unknown'} | Page: ${currentPage || '
 
 Keep responses concise — compact plugin window.
 
-## OGraf Overlays
+## Two Overlay Types
 
-When asked for overlays/motion graphics/lower thirds/titles, generate OGraf format: .ograf.json manifest + .js Web Component. Output EXACTLY two code blocks: \`\`\`json with // FILE: Name.ograf.json, then \`\`\`javascript with // FILE: Name.js.
+### 1. OGraf Template (reusable overlays with Inspector params)
+
+For reusable overlays/lower thirds/titles. Output EXACTLY two code blocks: \`\`\`json with // FILE: Name.ograf.json, then \`\`\`javascript with // FILE: Name.js.
 
 Web Component must implement: load, dispose, playAction, stopAction, updateAction, customAction, goToTime, setActionsSchedule, connectedCallback. Use Shadow DOM, export default, NO customElements.define().
 
 Schema property types: string, string with gddType "color-rrggbb", number (min/max), integer (min/max), boolean. Max 20 properties.
 
-### Critical Rules
-- goToTime receives {timestamp: ms} — use _setFrame(timestamp/1000) for all animation
-- DETERMINISTIC: same timestamp = identical output. NO setTimeout/setInterval/rAF
-- NO CSS transitions or animations — direct style assignments only (flickering on CPU capture)
-- will-change on EVERY animated element. .toFixed(1) for sub-pixel values
-- Hidden state (_setFrame < 0 or > duration) must reset ALL animated properties
-- NO external deps, no fetch, no CDN
+Critical: goToTime receives {timestamp: ms} — use _setFrame(timestamp/1000). DETERMINISTIC: same timestamp = identical output. NO setTimeout/setInterval/rAF. NO CSS transitions/animations — direct style assignments only. will-change on animated elements. .toFixed(1) for sub-pixel values.
 
-### Animation Principles
+For full OGraf spec: C:\\ProgramData\\Blackmagic Design\\DaVinci Resolve\\Support\\Developer\\OGraf HTML Templates\\
+
+### 2. Standard HTML Animation (complex one-off motion graphics)
+
+For complex animations with full CSS/JS freedom. Output ONE \`\`\`html code block with // FILE: Name.html. The HTML must implement:
+- window.renderFrame(frameNumber, fps) — set exact visual state for frame
+- window.getAnimationDuration() — return total duration in seconds
+
+Full creative freedom: CSS transitions, blur, filters, backdrop-filter, SVG, Canvas — anything. Use transparent background (no body background color). Playwright captures each frame and encodes to ProRes 4444 .mov with alpha, then imports to timeline.
+
+### Which to use
+- User wants reusable template with Inspector params → OGraf
+- User wants complex one-off animation, cinematic motion graphics, effects with blur/filters → Standard HTML
+
+### Animation Principles (both types)
 - Ease-out: cubic-bezier(0.23, 1, 0.32, 1) for entering elements
 - Ease-in-out: cubic-bezier(0.77, 0, 0.175, 1) for on-screen movement
 - Never scale(0) — start from scale(0.95) + opacity: 0
 - Phase durations 150-300ms, stagger 50-100ms between elements
-- Animate transform + opacity together. Use translate/scale/rotate, NOT top/left/width/height
-
-For full OGraf spec and examples: C:\\ProgramData\\Blackmagic Design\\DaVinci Resolve\\Support\\Developer\\OGraf HTML Templates\\`;
+- Animate transform + opacity together. Use translate/scale/rotate, NOT top/left/width/height`;
 
     isContextTurn = true;
     const msg = JSON.stringify({ type: 'user', message: { role: 'user', content: context } });

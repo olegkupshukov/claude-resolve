@@ -32,7 +32,7 @@ app.whenReady().then(async () => {
     createWindow();
     setupResolveHandlers(ipcMain);
     setupClaudeHandlers(ipcMain, mainWindow);
-    setupOverlayHandlers(ipcMain);
+    setupOverlayHandlers(ipcMain, mainWindow);
     spawnClaude();
     await sendContextMessage();
 });

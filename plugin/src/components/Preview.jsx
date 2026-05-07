@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo } from 'react';
 
-export default function Preview({ parsed }) {
+function OGrafPreview({ parsed }) {
     const iframeRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(true);
 
@@ -60,4 +60,21 @@ play();
             </button>
         </div>
     );
+}
+
+function HTMLPreview({ parsed }) {
+    return (
+        <div className="preview-wrapper">
+            <iframe
+                className="preview-frame"
+                sandbox="allow-scripts"
+                srcDoc={parsed.html}
+            />
+        </div>
+    );
+}
+
+export default function Preview({ parsed }) {
+    if (parsed.type === 'html') return <HTMLPreview parsed={parsed} />;
+    return <OGrafPreview parsed={parsed} />;
 }

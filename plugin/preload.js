@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld('resolveAPI', {
 
 contextBridge.exposeInMainWorld('overlayAPI', {
     save: (data) => ipcRenderer.invoke('overlay:save', data),
+    renderMov: (data) => ipcRenderer.invoke('overlay:renderMov', data),
+    onRenderProgress: (callback) => {
+        const handler = (_e, data) => callback(data);
+        ipcRenderer.on('overlay:renderProgress', handler);
+        return () => ipcRenderer.removeListener('overlay:renderProgress', handler);
+    },
     listTemplates: () => ipcRenderer.invoke('templates:list'),
     deleteTemplate: (folder) => ipcRenderer.invoke('templates:delete', folder),
     deleteAllTemplates: () => ipcRenderer.invoke('templates:deleteAll')

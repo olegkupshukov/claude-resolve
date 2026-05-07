@@ -89,4 +89,4 @@ function setupResolveHandlers(ipcMain) {
     ipcMain.handle('resolve:cleanup', cleanupResolveInterface);
 }
 
-module.exports = { setupResolveHandlers, handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline };
+module.exports = { setupResolveHandlers, handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline, getResolve, getCurrentProject };

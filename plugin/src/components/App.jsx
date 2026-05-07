@@ -10,10 +10,20 @@ function tryParseOGrafResponse(text) {
     if (!jsonMatch || !jsMatch) return null;
     const templateName = jsonMatch[1].replace('.ograf.json', '');
     return {
+        type: 'ograf',
         templateName,
         manifestJSON: jsonMatch[2].trim(),
         componentJS: jsMatch[2].trim()
     };
+}
+
+function tryParseStandardHTML(text) {
+    const htmlMatch = text.match(/```html\s*\n(?:\/\/ FILE:\s*(\S+\.html)\s*\n)?([\s\S]*?)```/);
+    if (!htmlMatch) return null;
+    const html = htmlMatch[2].trim();
+    if (!html.includes('renderFrame') || !html.includes('getAnimationDuration')) return null;
+    const name = htmlMatch[1]?.replace('.html', '') || 'Overlay';
+    return { type: 'html', name, html };
 }
 
 export default function App() {
@@ -68,7 +78,7 @@ export default function App() {
                     msg.text += '\n(Stopped)';
                 }
                 if (code === 1) msg.isError = true;
-                if (code === 0) msg.parsed = tryParseOGrafResponse(msg.text);
+                if (code === 0) msg.parsed = tryParseOGrafResponse(msg.text) || tryParseStandardHTML(msg.text);
                 msg.cost = pendingCost.current;
                 updated[updated.length - 1] = msg;
                 return updated;
