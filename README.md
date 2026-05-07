@@ -39,17 +39,14 @@ Claude Resolve is a Workflow Integration Plugin that brings AI-powered motion gr
 
 4. Make sure ffmpeg is in your PATH.
 
-5. Copy the plugin folder to the Resolve plugins directory:
+5. Clone the repo and run the install script as administrator:
    ```
-   xcopy /E /I plugin "C:\ProgramData\Blackmagic Design\DaVinci Resolve\Support\Workflow Integration Plugins\com.clauderesolve.plugin"
-   ```
-
-6. Copy the renderer:
-   ```
-   xcopy /E /I renderer "C:\ProgramData\Blackmagic Design\DaVinci Resolve\Support\Workflow Integration Plugins\com.clauderesolve.plugin\renderer"
+   git clone https://github.com/olegkupshukov/claude-resolve.git
+   cd claude-resolve
+   install.bat
    ```
 
-7. Restart DaVinci Resolve. Open the plugin from **Workspace > Workflow Integration > Claude Resolve**.
+6. Restart DaVinci Resolve. Open the plugin from **Workspace > Workflow Integration > Claude Resolve**.
 
 ## Usage
 
