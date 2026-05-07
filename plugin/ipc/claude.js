@@ -249,11 +249,9 @@ function handleCheckAuth() {
     }
 }
 
-function handleLogin() {
-    return new Promise((resolve) => {
-        const proc = spawn(CLAUDE_PATH, ['login'], { shell: true });
-        proc.on('close', (code) => resolve({ success: code === 0 }));
-        proc.on('error', () => resolve({ success: false }));
+function handleOpenLoginTerminal() {
+    spawn('cmd', ['/c', 'start', 'cmd', '/k', CLAUDE_PATH + ' login'], {
+        detached: true, shell: false, stdio: 'ignore'
     });
 }
 
@@ -268,7 +266,7 @@ function setupClaudeHandlers(ipcMain, win) {
     ipcMain.handle('claude:abort', handleClaudeAbort);
     ipcMain.handle('claude:restart', handleRestart);
     ipcMain.handle('claude:checkAuth', handleCheckAuth);
-    ipcMain.handle('claude:login', handleLogin);
+    ipcMain.handle('claude:openLoginTerminal', handleOpenLoginTerminal);
     ipcMain.handle('claude:start', handleStart);
 }
 

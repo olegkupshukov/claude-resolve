@@ -17,6 +17,7 @@ function createWindow() {
         height: 700,
         alwaysOnTop: true,
         useContentSize: true,
+        icon: path.join(__dirname, 'src', 'assets', 'favicon.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js')
         }

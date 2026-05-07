@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const MOV_CHIPS = [
     'Create a glitch title animation',
@@ -12,22 +12,11 @@ const OGRAF_CHIPS = [
 ];
 
 export default function WelcomeScreen({ authState, onAuthStateChange, onStart, onPrompt, onDismiss, mode, onModeSwitch }) {
-    const [loginPending, setLoginPending] = useState(false);
-
     async function handleCheckAgain() {
         onAuthStateChange('checking');
         const result = await window.claudeAPI.checkAuth();
         onAuthStateChange(result.status);
         if (result.status === 'ready') {
-            await onStart();
-        }
-    }
-
-    async function handleLogin() {
-        setLoginPending(true);
-        const result = await window.claudeAPI.login();
-        setLoginPending(false);
-        if (result.success) {
             await onStart();
         }
     }
@@ -60,9 +49,12 @@ export default function WelcomeScreen({ authState, onAuthStateChange, onStart, o
             <div className="welcome-screen">
                 <div className="welcome-content">
                     <h2 className="welcome-title">Claude Code found</h2>
-                    <p className="welcome-subtitle">Login to continue</p>
-                    <button className="btn" onClick={handleLogin} disabled={loginPending}>
-                        {loginPending ? 'Waiting for browser...' : 'Login with Claude'}
+                    <p className="welcome-subtitle">Log in from the terminal, then click Check Again.</p>
+                    <button className="btn" onClick={() => window.claudeAPI.openLoginTerminal()}>
+                        Open Login in Terminal
+                    </button>
+                    <button className="btn btn-secondary" style={{ marginTop: 8 }} onClick={handleCheckAgain}>
+                        Check Again
                     </button>
                 </div>
             </div>
