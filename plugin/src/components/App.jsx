@@ -91,6 +91,8 @@ export default function App() {
             setIsProcessing(false);
         });
 
+        window.overlayAPI.syncToMediaPool().catch(() => {});
+
         function handleUnload() {
             window.resolveAPI.cleanup();
         }

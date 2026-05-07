@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 export default function TemplateManager() {
     const [templates, setTemplates] = useState([]);
     const [renders, setRenders] = useState([]);
+    const [syncStatus, setSyncStatus] = useState(null);
 
     useEffect(() => {
         refreshTemplates();
@@ -39,6 +40,17 @@ export default function TemplateManager() {
         refreshRenders();
     }
 
+    async function handleSync() {
+        setSyncStatus('syncing');
+        try {
+            const result = await window.overlayAPI.syncToMediaPool();
+            setSyncStatus(result.synced > 0 ? `Synced ${result.synced} new` : 'All synced \u2713');
+        } catch {
+            setSyncStatus('Sync failed');
+        }
+        setTimeout(() => setSyncStatus(null), 3000);
+    }
+
     return (
         <div id="templates-panel">
             <div className="panel-section-header">
@@ -65,7 +77,12 @@ export default function TemplateManager() {
             </div>
             <div className="panel-section-header panel-section-separator">
                 <span>Renders</span>
-                <button className="btn-text" onClick={handleDeleteAllRenders}>Delete All</button>
+                <span className="panel-header-actions">
+                    {syncStatus
+                        ? <span className="sync-status">{syncStatus}</span>
+                        : <button className="btn-text" onClick={handleSync}>Sync to Media Pool</button>}
+                    <button className="btn-text" onClick={handleDeleteAllRenders}>Delete All</button>
+                </span>
             </div>
             <div className="panel-section-list">
                 {renders.length === 0 ? (

@@ -289,6 +289,17 @@ body, #root {
     border-top: 1px solid var(--color-border);
 }
 
+.panel-header-actions {
+    display: flex;
+    gap: var(--gap-xs);
+    align-items: center;
+}
+
+.sync-status {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
 .panel-section-list {
     padding: 0 var(--gap-md) var(--gap-xs);
     color: var(--color-text-muted);

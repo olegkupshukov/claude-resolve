@@ -243,6 +243,36 @@ function handleListRenders() {
         });
 }
 
+async function handleSyncToMediaPool() {
+    if (!fs.existsSync(RENDER_DIR)) return { synced: 0, total: 0 };
+    const files = fs.readdirSync(RENDER_DIR).filter(f => f.endsWith('.mov'));
+    if (files.length === 0) return { synced: 0, total: 0 };
+
+    const resolve = await getResolve();
+    if (!resolve) return { synced: 0, total: files.length, error: 'Resolve not connected' };
+
+    const project = await getCurrentProject();
+    const mediaPool = await project.GetMediaPool();
+    const bin = await findOrCreateBin(mediaPool, 'Claude Resolve');
+
+    const existing = await bin.GetClipList();
+    const existingNames = new Set();
+    for (const clip of (existing || [])) {
+        const props = await clip.GetClipProperty();
+        if (props['File Name']) existingNames.add(props['File Name']);
+    }
+
+    const toImport = files.filter(f => !existingNames.has(f));
+    if (toImport.length === 0) return { synced: 0, total: files.length };
+
+    const prevFolder = await mediaPool.GetCurrentFolder();
+    await mediaPool.SetCurrentFolder(bin);
+    await mediaPool.ImportMedia(toImport.map(f => path.join(RENDER_DIR, f)));
+    await mediaPool.SetCurrentFolder(prevFolder);
+
+    return { synced: toImport.length, total: files.length };
+}
+
 function handleDeleteRender(_event, name) {
     const p = path.join(RENDER_DIR, name);
     if (!fs.existsSync(p)) return false;
@@ -267,6 +297,7 @@ function setupOverlayHandlers(ipcMain, win) {
     ipcMain.handle('renders:list', handleListRenders);
     ipcMain.handle('renders:delete', handleDeleteRender);
     ipcMain.handle('renders:deleteAll', handleDeleteAllRenders);
+    ipcMain.handle('renders:syncToMediaPool', handleSyncToMediaPool);
 }
 
 module.exports = { setupOverlayHandlers };
