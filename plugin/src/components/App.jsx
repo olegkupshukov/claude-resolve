@@ -145,10 +145,10 @@ export default function App() {
         }
     }
 
-    async function handleToggleSidebar() {
+    function handleToggleSidebar() {
         const next = !sidebarOpen;
-        await window.windowAPI.resize({ width: next ? 720 : 500, height: 700 });
         setSidebarOpen(next);
+        window.windowAPI.resize({ width: next ? 720 : 500, height: 700 }).catch(() => {});
     }
 
     const showWelcome = authState !== 'ready' || welcomed;
@@ -173,6 +173,7 @@ export default function App() {
                             onAuthStateChange={setAuthState}
                             onStart={() => setAuthState('ready')}
                             onPrompt={handleSend}
+                            onDismiss={() => setWelcomed(false)}
                             mode={config.mode}
                             onModeSwitch={handleModeSwitch}
                         />

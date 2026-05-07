@@ -359,34 +359,31 @@ body, #root {
 /* Gear button */
 
 .btn-gear {
-    background: transparent;
-    border: 1px solid var(--color-border);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border: none;
     border-radius: var(--radius-md);
-    color: var(--color-text-muted);
     cursor: pointer;
     padding: var(--gap-sm);
     font-size: var(--font-size-base);
     line-height: 1;
     transition: background var(--duration-normal) var(--ease-out),
-                color var(--duration-normal) var(--ease-out),
-                border-color var(--duration-normal) var(--ease-out);
+                box-shadow var(--duration-normal) var(--ease-out);
 }
 
 .btn-gear-active {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    border-color: var(--color-accent);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .btn-gear:not(.btn-gear-active):hover {
-        color: var(--color-text);
-        border-color: var(--color-text-muted);
+    .btn-gear:hover {
+        background: var(--color-accent-hover);
     }
 }
 
 .btn-gear:active {
-    transform: scale(0.95);
+    transform: scale(0.97);
+    background: var(--color-accent-active);
 }
 
 /* Segmented control */
@@ -677,6 +674,23 @@ body, #root {
 
 .welcome-chip:active {
     transform: scale(0.97);
+}
+
+.welcome-blank-link {
+    display: block;
+    margin-top: var(--gap-md);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: color var(--duration-normal) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .welcome-blank-link:hover {
+        color: var(--color-text);
+    }
 }
 
 .welcome-code {

@@ -11,7 +11,7 @@ const OGRAF_CHIPS = [
     'Make a countdown timer'
 ];
 
-export default function WelcomeScreen({ authState, onAuthStateChange, onStart, onPrompt, mode, onModeSwitch }) {
+export default function WelcomeScreen({ authState, onAuthStateChange, onStart, onPrompt, onDismiss, mode, onModeSwitch }) {
     const [loginPending, setLoginPending] = useState(false);
 
     async function handleCheckAgain() {
@@ -102,6 +102,9 @@ export default function WelcomeScreen({ authState, onAuthStateChange, onStart, o
                         </button>
                     ))}
                 </div>
+                <button className="welcome-blank-link" onClick={onDismiss}>
+                    Start with a blank prompt
+                </button>
             </div>
         </div>
     );
