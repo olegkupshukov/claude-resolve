@@ -1,6 +1,6 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 
-export default function Preview({ parsed }) {
+export default function Preview({ parsed, params }) {
     const iframeRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(true);
 
@@ -36,10 +36,16 @@ await el.playAction();
 let t=0;const dur=${duration}*1000;const step=1000/30;let iv=null;
 function play(){if(iv)return;iv=setInterval(async()=>{t+=step;if(t>dur)t=0;await el.goToTime({timestamp:t})},step)}
 function pause(){if(iv){clearInterval(iv);iv=null}}
-window.addEventListener('message',e=>{if(e.data==='play')play();else if(e.data==='pause')pause()});
+window.addEventListener('message',e=>{if(e.data==='play')play();else if(e.data==='pause')pause();else if(e.data&&e.data.type==='update')el.updateAction({data:e.data.data})});
 play();
 <\/script></body></html>`;
     }, [parsed]);
+
+    useEffect(() => {
+        if (params && iframeRef.current?.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({ type: 'update', data: params }, '*');
+        }
+    }, [params]);
 
     function togglePlay() {
         const next = !isPlaying;

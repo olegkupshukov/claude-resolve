@@ -33,6 +33,9 @@ app.whenReady().then(async () => {
     setupResolveHandlers(ipcMain);
     setupClaudeHandlers(ipcMain, mainWindow);
     setupOverlayHandlers(ipcMain);
+    ipcMain.handle('window:resize', (_event, width, height) => {
+        if (mainWindow) mainWindow.setSize(width, height);
+    });
     spawnClaude();
     await sendContextMessage();
 });

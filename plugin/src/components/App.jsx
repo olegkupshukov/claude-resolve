@@ -3,6 +3,7 @@ import StatusBar from './StatusBar';
 import Chat from './Chat';
 import ChatInput from './ChatInput';
 import TemplateManager from './TemplateManager';
+import PreviewPanel from './PreviewPanel';
 
 function tryParseOGrafResponse(text) {
     const jsonMatch = text.match(/```json\s*\n\/\/ FILE:\s*(\S+\.ograf\.json)\s*\n([\s\S]*?)```/);
@@ -21,8 +22,14 @@ export default function App() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [templatesOpen, setTemplatesOpen] = useState(false);
     const [activeTool, setActiveTool] = useState(null);
+    const [previewData, setPreviewData] = useState(null);
     const nextId = useRef(0);
     const pendingCost = useRef(null);
+
+    useEffect(() => {
+        const width = previewData ? 900 : 500;
+        window.windowAPI?.resize(width, 700);
+    }, [previewData]);
 
     useEffect(() => {
         function appendToLast(data) {
@@ -56,6 +63,7 @@ export default function App() {
         });
 
         window.claudeAPI.onDone((code) => {
+            let newParsed = null;
             setMessages(prev => {
                 const last = prev[prev.length - 1];
                 if (!last || last.type !== 'assistant') return prev;
@@ -68,11 +76,15 @@ export default function App() {
                     msg.text += '\n(Stopped)';
                 }
                 if (code === 1) msg.isError = true;
-                if (code === 0) msg.parsed = tryParseOGrafResponse(msg.text);
+                if (code === 0) {
+                    msg.parsed = tryParseOGrafResponse(msg.text);
+                    newParsed = msg.parsed;
+                }
                 msg.cost = pendingCost.current;
                 updated[updated.length - 1] = msg;
                 return updated;
             });
+            if (newParsed) setPreviewData(newParsed);
             pendingCost.current = null;
             setActiveTool(null);
             setIsProcessing(false);
@@ -100,17 +112,38 @@ export default function App() {
         window.claudeAPI.abort();
     }
 
+    function handleIterate(text) {
+        setPreviewData(null);
+        handleSend(`Update the template: ${text}`);
+    }
+
+    function handleOpenPreview(parsed) {
+        setPreviewData(parsed);
+    }
+
     return (
         <>
             <StatusBar />
-            <Chat messages={messages} activeTool={activeTool} />
-            {templatesOpen && <TemplateManager />}
-            <ChatInput
-                onSend={handleSend}
-                onStop={handleStop}
-                isProcessing={isProcessing}
-                onToggleTemplates={() => setTemplatesOpen(v => !v)}
-            />
+            <div id="app-body">
+                <div id="chat-column">
+                    <Chat messages={messages} activeTool={activeTool}
+                        onOpenPreview={handleOpenPreview} />
+                    {templatesOpen && <TemplateManager />}
+                    <ChatInput
+                        onSend={handleSend}
+                        onStop={handleStop}
+                        isProcessing={isProcessing}
+                        onToggleTemplates={() => setTemplatesOpen(v => !v)}
+                    />
+                </div>
+                {previewData && (
+                    <PreviewPanel
+                        parsed={previewData}
+                        onClose={() => setPreviewData(null)}
+                        onIterate={handleIterate}
+                    />
+                )}
+            </div>
         </>
     );
 }

@@ -26,6 +26,10 @@ contextBridge.exposeInMainWorld('overlayAPI', {
     deleteAllTemplates: () => ipcRenderer.invoke('templates:deleteAll')
 });
 
+contextBridge.exposeInMainWorld('windowAPI', {
+    resize: (width, height) => ipcRenderer.invoke('window:resize', width, height)
+});
+
 contextBridge.exposeInMainWorld('claudeAPI', {
     sendPrompt: (text) => ipcRenderer.invoke('claude:send', text),
     abort: () => ipcRenderer.invoke('claude:abort'),
