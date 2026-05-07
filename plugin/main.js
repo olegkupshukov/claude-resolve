@@ -7,6 +7,7 @@ const path = require('path');
 const { setupResolveHandlers } = require('./ipc/resolve');
 const { setupClaudeHandlers, cleanupClaude } = require('./ipc/claude');
 const { setupOverlayHandlers } = require('./ipc/overlay');
+const { setupConfigHandlers } = require('./ipc/config');
 
 let mainWindow = null;
 
@@ -33,6 +34,7 @@ app.whenReady().then(async () => {
     setupResolveHandlers(ipcMain);
     setupClaudeHandlers(ipcMain, mainWindow);
     setupOverlayHandlers(ipcMain, mainWindow);
+    setupConfigHandlers(ipcMain);
 });
 
 app.on('window-all-closed', () => {

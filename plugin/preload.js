@@ -40,10 +40,16 @@ contextBridge.exposeInMainWorld('claudeAPI', {
     checkAuth: () => ipcRenderer.invoke('claude:checkAuth'),
     login: () => ipcRenderer.invoke('claude:login'),
     start: () => ipcRenderer.invoke('claude:start'),
+    restart: () => ipcRenderer.invoke('claude:restart'),
     sendPrompt: (text) => ipcRenderer.invoke('claude:send', text),
     abort: () => ipcRenderer.invoke('claude:abort'),
     onOutput: (callback) => ipcRenderer.on('claude:stdout', (_e, data) => callback(data)),
     onError: (callback) => ipcRenderer.on('claude:stderr', (_e, data) => callback(data)),
     onDone: (callback) => ipcRenderer.on('claude:done', (_e, code) => callback(code)),
     onStatus: (callback) => ipcRenderer.on('claude:status', (_e, data) => callback(data))
+});
+
+contextBridge.exposeInMainWorld('configAPI', {
+    get: () => ipcRenderer.invoke('config:get'),
+    set: (partial) => ipcRenderer.invoke('config:set', partial)
 });

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 
-export default function ChatInput({ onSend, onStop, isProcessing, onToggleTemplates }) {
+export default function ChatInput({ onSend, onStop, isProcessing }) {
     const inputRef = useRef(null);
 
     useEffect(() => {
@@ -25,9 +25,6 @@ export default function ChatInput({ onSend, onStop, isProcessing, onToggleTempla
 
     return (
         <div id="input-bar">
-            <button className="btn-icon" title="Templates" onClick={onToggleTemplates}>
-                &#9776;
-            </button>
             <input
                 ref={inputRef}
                 type="text"

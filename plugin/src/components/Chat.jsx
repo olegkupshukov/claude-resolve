@@ -45,7 +45,7 @@ function RenderMovAction({ parsed }) {
         setErrorMsg('');
         try {
             const result = await window.overlayAPI.renderMov({
-                html: parsed.html, name: parsed.name, fps: 25, width: 1920, height: 1080
+                html: parsed.html, name: parsed.name
             });
             if (result.success) {
                 setStatus(result.warning ? 'rendered' : 'done');

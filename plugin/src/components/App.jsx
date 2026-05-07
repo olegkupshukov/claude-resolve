@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import StatusBar from './StatusBar';
 import Chat from './Chat';
 import ChatInput from './ChatInput';
-import TemplateManager from './TemplateManager';
+import Sidebar from './Sidebar';
 import WelcomeScreen from './WelcomeScreen';
 
 function tryParseOGrafResponse(text) {
@@ -30,9 +30,10 @@ function tryParseStandardHTML(text) {
 export default function App() {
     const [authState, setAuthState] = useState('checking');
     const [welcomed, setWelcomed] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [config, setConfig] = useState({ mode: 'mov', fps: 25, width: 1920, height: 1080 });
     const [messages, setMessages] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [templatesOpen, setTemplatesOpen] = useState(false);
     const [activeTool, setActiveTool] = useState(null);
     const [tokenCount, setTokenCount] = useState(0);
     const nextId = useRef(0);
@@ -95,20 +96,16 @@ export default function App() {
         });
 
         window.overlayAPI.syncToMediaPool().catch(() => {});
+        window.configAPI.get().then(setConfig);
 
-        window.claudeAPI.checkAuth().then(async (result) => {
+        window.claudeAPI.checkAuth().then((result) => {
             setAuthState(result.status);
-            if (result.status === 'ready') {
-                await window.claudeAPI.start();
-            }
         });
 
         function handleUnload() {
             window.resolveAPI.cleanup();
         }
         window.addEventListener('beforeunload', handleUnload);
-        // IPC listeners (onOutput/onError/onDone/onStatus) are not cleaned up
-        // because App is the root component and never unmounts.
         return () => window.removeEventListener('beforeunload', handleUnload);
     }, []);
 
@@ -131,32 +128,62 @@ export default function App() {
         window.claudeAPI.abort();
     }
 
+    async function handleConfigChange(partial) {
+        const updated = await window.configAPI.set(partial);
+        setConfig(updated);
+    }
+
+    async function handleModeSwitch(newMode) {
+        if (newMode === config.mode) return;
+        const updated = await window.configAPI.set({ mode: newMode });
+        setConfig(updated);
+        if (!welcomed) {
+            setMessages([]);
+            setIsProcessing(false);
+            setActiveTool(null);
+            window.claudeAPI.restart();
+        }
+    }
+
     const showWelcome = authState !== 'ready' || welcomed;
 
     return (
         <>
             <StatusBar />
-            {showWelcome ? (
-                <WelcomeScreen
-                    authState={authState}
-                    onAuthStateChange={setAuthState}
-                    onStart={async () => {
-                        await window.claudeAPI.start();
-                        setAuthState('ready');
-                    }}
-                    onPrompt={(text) => { setWelcomed(false); handleSend(text); }}
-                />
-            ) : (
-                <>
+            <div className="app-body">
+                {!showWelcome && (
+                    <button
+                        className="btn-icon sidebar-toggle"
+                        onClick={() => setSidebarOpen(v => !v)}
+                        title="Menu"
+                    >&#9776;</button>
+                )}
+                {showWelcome ? (
+                    <WelcomeScreen
+                        authState={authState}
+                        onAuthStateChange={setAuthState}
+                        onStart={() => setAuthState('ready')}
+                        onPrompt={handleSend}
+                        mode={config.mode}
+                        onModeSwitch={handleModeSwitch}
+                    />
+                ) : (
                     <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} />
-                    {templatesOpen && <TemplateManager />}
-                </>
-            )}
+                )}
+                {sidebarOpen && (
+                    <Sidebar
+                        isOpen={sidebarOpen}
+                        config={config}
+                        onConfigChange={handleConfigChange}
+                        onModeSwitch={handleModeSwitch}
+                        onClose={() => setSidebarOpen(false)}
+                    />
+                )}
+            </div>
             <ChatInput
                 onSend={handleSend}
                 onStop={handleStop}
                 isProcessing={isProcessing}
-                onToggleTemplates={() => setTemplatesOpen(v => !v)}
             />
         </>
     );

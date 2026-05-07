@@ -3,6 +3,7 @@ const path = require('path');
 const os = require('os');
 const { spawn, execSync } = require('child_process');
 const { getResolve, getCurrentProject } = require('./resolve');
+const { readConfig } = require('./config');
 
 // Resolve executable paths at load time — Resolve's Electron may have a stripped PATH
 function findExecutable(candidates, verifyCmd) {
@@ -167,7 +168,11 @@ async function importToTimeline(movPath) {
     }]);
 }
 
-async function handleRenderMov(_event, { html, name, fps = 25, width = 1920, height = 1080 }) {
+async function handleRenderMov(_event, { html, name, fps, width, height }) {
+    const cfg = readConfig();
+    fps = fps || cfg.fps;
+    width = width || cfg.width;
+    height = height || cfg.height;
     const tempDir = path.join(os.tmpdir(), 'claude_resolve_' + Date.now());
     fs.mkdirSync(tempDir, { recursive: true });
     fs.mkdirSync(RENDER_DIR, { recursive: true });

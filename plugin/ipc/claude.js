@@ -1,6 +1,7 @@
 const { spawn, exec, execSync } = require('child_process');
 const path = require('path');
 const { handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline } = require('./resolve');
+const { readConfig } = require('./config');
 
 const CLAUDE_PATH = path.join(process.env.APPDATA, 'npm', 'claude.cmd');
 
@@ -9,8 +10,10 @@ let claudeProcess = null;
 let stdoutBuffer = '';
 let isContextTurn = false;
 let isAborting = false;
+let isRestarting = false;
 
 function spawnClaude() {
+    if (claudeProcess) return;
     stdoutBuffer = '';
 
     claudeProcess = spawn(CLAUDE_PATH, [
@@ -25,7 +28,9 @@ function spawnClaude() {
         stdio: ['pipe', 'pipe', 'pipe']
     });
 
-    claudeProcess.stdout.on('data', (chunk) => {
+    const proc = claudeProcess;
+
+    proc.stdout.on('data', (chunk) => {
         stdoutBuffer += chunk.toString();
         const lines = stdoutBuffer.split('\n');
         stdoutBuffer = lines.pop();
@@ -41,14 +46,21 @@ function spawnClaude() {
         }
     });
 
-    claudeProcess.stderr.on('data', (data) => {
+    proc.stderr.on('data', (data) => {
         mainWindow.webContents.send('claude:stderr', data.toString());
     });
 
-    claudeProcess.on('close', () => {
-        claudeProcess = null;
-        stdoutBuffer = '';
-        if (isAborting) {
+    proc.on('close', () => {
+        if (claudeProcess === proc) {
+            claudeProcess = null;
+            stdoutBuffer = '';
+        }
+        if (isRestarting) {
+            isRestarting = false;
+            isAborting = false;
+            spawnClaude();
+            sendContextMessage();
+        } else if (isAborting) {
             isAborting = false;
             mainWindow.webContents.send('claude:done', 2);
             spawnClaude();
@@ -56,16 +68,15 @@ function spawnClaude() {
         }
     });
 
-    claudeProcess.on('error', (err) => {
+    proc.on('error', (err) => {
         mainWindow.webContents.send('claude:stderr', err.message);
-        claudeProcess = null;
+        if (claudeProcess === proc) {
+            claudeProcess = null;
+        }
     });
 }
 
 function handleStreamMessage(msg) {
-    // DEBUG: temporary — remove after verifying stream events
-    console.log('STREAM:', msg.type, msg.subtype || '', JSON.stringify(msg).slice(0, 400));
-
     if (msg.type === 'assistant') {
         if (isContextTurn) return;
 
@@ -106,24 +117,46 @@ function handleStreamMessage(msg) {
     }
 }
 
-async function sendContextMessage() {
-    const [projectName, currentPage, timelineName] = await Promise.all([
-        handleGetProjectName(),
-        handleGetCurrentPage(),
-        handleGetCurrentTimeline()
-    ]);
+const ANIMATION_PRINCIPLES = `## Animation Principles
+- Ease-out: cubic-bezier(0.23, 1, 0.32, 1) for entering elements
+- Ease-in-out: cubic-bezier(0.77, 0, 0.175, 1) for on-screen movement
+- Never scale(0) — start from scale(0.95) + opacity: 0
+- Phase durations 150-300ms, stagger 50-100ms between elements
+- Animate transform + opacity together. Use translate/scale/rotate, NOT top/left/width/height`;
 
-    const context = `You are Claude Resolve — an AI assistant inside DaVinci Resolve Studio (Workflow Integration Plugin).
+function buildMovPrompt(projectName, currentPage, timelineName, config) {
+    return `You are Claude Resolve — an AI assistant inside DaVinci Resolve Studio (Workflow Integration Plugin).
+
+Current session: Project: ${projectName || 'Unknown'} | Page: ${currentPage || 'Unknown'} | Timeline: ${timelineName || 'None'}
+Target: ${config.width}x${config.height} @ ${config.fps}fps
+
+Keep responses concise — compact plugin window.
+
+## Your Task
+
+You generate Standard HTML Animations — complex one-off motion graphics rendered to ProRes 4444 .mov.
+
+Output ONE \`\`\`html code block with // FILE: Name.html. The HTML must implement:
+- window.renderFrame(frameNumber, fps) — set exact visual state for frame
+- window.getAnimationDuration() — return total duration in seconds
+
+Full creative freedom: CSS transitions, blur, filters, backdrop-filter, SVG, Canvas — anything. Use transparent background (no body background color). Playwright captures each frame and encodes to ProRes 4444 .mov with alpha, then imports to timeline.
+
+${ANIMATION_PRINCIPLES}`;
+}
+
+function buildOGrafPrompt(projectName, currentPage, timelineName) {
+    return `You are Claude Resolve — an AI assistant inside DaVinci Resolve Studio (Workflow Integration Plugin).
 
 Current session: Project: ${projectName || 'Unknown'} | Page: ${currentPage || 'Unknown'} | Timeline: ${timelineName || 'None'}
 
 Keep responses concise — compact plugin window.
 
-## Two Overlay Types
+## Your Task
 
-### 1. OGraf Template (reusable overlays with Inspector params)
+You generate OGraf Web Component Templates — reusable overlays with Inspector parameters for DaVinci Resolve.
 
-For reusable overlays/lower thirds/titles. Output EXACTLY two code blocks: \`\`\`json with // FILE: Name.ograf.json, then \`\`\`javascript with // FILE: Name.js.
+Output EXACTLY two code blocks: \`\`\`json with // FILE: Name.ograf.json, then \`\`\`javascript with // FILE: Name.js.
 
 Web Component must implement: load, dispose, playAction, stopAction, updateAction, customAction, goToTime, setActionsSchedule, connectedCallback. Use Shadow DOM, export default, NO customElements.define().
 
@@ -133,24 +166,20 @@ Critical: goToTime receives {timestamp: ms} — use _setFrame(timestamp/1000). D
 
 For full OGraf spec: C:\\ProgramData\\Blackmagic Design\\DaVinci Resolve\\Support\\Developer\\OGraf HTML Templates\\
 
-### 2. Standard HTML Animation (complex one-off motion graphics)
+${ANIMATION_PRINCIPLES}`;
+}
 
-For complex animations with full CSS/JS freedom. Output ONE \`\`\`html code block with // FILE: Name.html. The HTML must implement:
-- window.renderFrame(frameNumber, fps) — set exact visual state for frame
-- window.getAnimationDuration() — return total duration in seconds
+async function sendContextMessage() {
+    const [projectName, currentPage, timelineName] = await Promise.all([
+        handleGetProjectName(),
+        handleGetCurrentPage(),
+        handleGetCurrentTimeline()
+    ]);
 
-Full creative freedom: CSS transitions, blur, filters, backdrop-filter, SVG, Canvas — anything. Use transparent background (no body background color). Playwright captures each frame and encodes to ProRes 4444 .mov with alpha, then imports to timeline.
-
-### Which to use
-- User wants reusable template with Inspector params → OGraf
-- User wants complex one-off animation, cinematic motion graphics, effects with blur/filters → Standard HTML
-
-### Animation Principles (both types)
-- Ease-out: cubic-bezier(0.23, 1, 0.32, 1) for entering elements
-- Ease-in-out: cubic-bezier(0.77, 0, 0.175, 1) for on-screen movement
-- Never scale(0) — start from scale(0.95) + opacity: 0
-- Phase durations 150-300ms, stagger 50-100ms between elements
-- Animate transform + opacity together. Use translate/scale/rotate, NOT top/left/width/height`;
+    const config = readConfig();
+    const context = config.mode === 'ograf'
+        ? buildOGrafPrompt(projectName, currentPage, timelineName)
+        : buildMovPrompt(projectName, currentPage, timelineName, config);
 
     isContextTurn = true;
     const msg = JSON.stringify({ type: 'user', message: { role: 'user', content: context } });
@@ -167,9 +196,24 @@ function handleClaudeAbort() {
     }
 }
 
+function handleRestart() {
+    if (!claudeProcess) {
+        spawnClaude();
+        sendContextMessage();
+        return;
+    }
+    isRestarting = true;
+    if (process.platform === 'win32') {
+        exec(`taskkill /F /T /PID ${claudeProcess.pid}`);
+    } else {
+        claudeProcess.kill();
+    }
+}
+
 async function handleClaudeSend(_event, text) {
     if (!claudeProcess) {
         spawnClaude();
+        await sendContextMessage();
     }
     const msg = JSON.stringify({ type: 'user', message: { role: 'user', content: text } });
     claudeProcess.stdin.write(msg + '\n');
@@ -213,6 +257,7 @@ function setupClaudeHandlers(ipcMain, win) {
     mainWindow = win;
     ipcMain.handle('claude:send', handleClaudeSend);
     ipcMain.handle('claude:abort', handleClaudeAbort);
+    ipcMain.handle('claude:restart', handleRestart);
     ipcMain.handle('claude:checkAuth', handleCheckAuth);
     ipcMain.handle('claude:login', handleLogin);
     ipcMain.handle('claude:start', handleStart);

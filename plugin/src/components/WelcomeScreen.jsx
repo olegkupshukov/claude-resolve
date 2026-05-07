@@ -1,6 +1,17 @@
 import React, { useState } from 'react';
 
-export default function WelcomeScreen({ authState, onAuthStateChange, onStart, onPrompt }) {
+const MOV_CHIPS = [
+    'Create a glitch title animation',
+    'Make a cinematic text reveal',
+    'Generate a subscribe button animation'
+];
+const OGRAF_CHIPS = [
+    'Generate a lower third overlay',
+    'Create a title card template',
+    'Make a countdown timer'
+];
+
+export default function WelcomeScreen({ authState, onAuthStateChange, onStart, onPrompt, mode, onModeSwitch }) {
     const [loginPending, setLoginPending] = useState(false);
 
     async function handleCheckAgain() {
@@ -58,22 +69,38 @@ export default function WelcomeScreen({ authState, onAuthStateChange, onStart, o
         );
     }
 
+    const chips = mode === 'ograf' ? OGRAF_CHIPS : MOV_CHIPS;
+
     return (
         <div className="welcome-screen">
             <div className="welcome-content">
                 <h1 className="welcome-title">Claude Resolve</h1>
                 <p className="welcome-subtitle">AI Motion Graphics for DaVinci Resolve</p>
+                <div className="mode-cards">
+                    <button
+                        className={`mode-card${mode === 'mov' ? ' mode-card-active' : ''}`}
+                        onClick={() => onModeSwitch('mov')}
+                    >
+                        <span className="mode-card-icon">&#127916;</span>
+                        <span className="mode-card-title">Animation (.mov)</span>
+                        <span className="mode-card-subtitle">Complex motion graphics, full CSS/JS freedom</span>
+                    </button>
+                    <button
+                        className={`mode-card${mode === 'ograf' ? ' mode-card-active' : ''}`}
+                        onClick={() => onModeSwitch('ograf')}
+                    >
+                        <span className="mode-card-icon">&#128208;</span>
+                        <span className="mode-card-title">Template (OGraf)</span>
+                        <span className="mode-card-subtitle">Reusable overlays with Inspector params</span>
+                    </button>
+                </div>
                 <hr className="welcome-separator" />
                 <div className="welcome-chips">
-                    <button className="welcome-chip" onClick={() => onPrompt('Generate a lower third overlay')}>
-                        Generate a lower third overlay
-                    </button>
-                    <button className="welcome-chip" onClick={() => onPrompt('Create a glitch title animation')}>
-                        Create a glitch title animation
-                    </button>
-                    <button className="welcome-chip" onClick={() => onPrompt('Make a cinematic text reveal')}>
-                        Make a cinematic text reveal
-                    </button>
+                    {chips.map(text => (
+                        <button key={text} className="welcome-chip" onClick={() => onPrompt(text)}>
+                            {text}
+                        </button>
+                    ))}
                 </div>
             </div>
         </div>
