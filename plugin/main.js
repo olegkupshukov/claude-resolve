@@ -296,11 +296,39 @@ When generating a template, output EXACTLY two code blocks:
 1. First block: \`\`\`json followed by the manifest, with a comment line // FILE: <TemplateName>.ograf.json
 2. Second block: \`\`\`javascript followed by the component, with a comment line // FILE: <TemplateName>.js
 
-The user can then install and add to timeline with one click.`;
+The user can then install with one click. After restarting Resolve, the template appears in Effects Library > Titles > HTML Titles > ClaudeResolve.`;
 
     isContextTurn = true;
     const msg = JSON.stringify({ type: 'user', message: { role: 'user', content: context } });
     claudeProcess.stdin.write(msg + '\n');
+}
+
+function handleListTemplates() {
+    if (!fs.existsSync(TEMPLATE_DIR)) return [];
+    const entries = fs.readdirSync(TEMPLATE_DIR, { withFileTypes: true });
+    return entries.filter(e => e.isDirectory()).map(e => {
+        const manifestPath = path.join(TEMPLATE_DIR, e.name, e.name + '.ograf.json');
+        let displayName = e.name;
+        try {
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+            if (manifest.name) displayName = manifest.name;
+        } catch (_e) { /* use folder name */ }
+        return { folder: e.name, name: displayName };
+    });
+}
+
+function handleDeleteTemplate(_event, folder) {
+    const dir = path.join(TEMPLATE_DIR, folder);
+    if (!fs.existsSync(dir)) return false;
+    fs.rmSync(dir, { recursive: true, force: true });
+    return true;
+}
+
+function handleDeleteAllTemplates() {
+    if (!fs.existsSync(TEMPLATE_DIR)) return false;
+    fs.rmSync(TEMPLATE_DIR, { recursive: true, force: true });
+    fs.mkdirSync(TEMPLATE_DIR, { recursive: true });
+    return true;
 }
 
 async function handleOverlaySave(_event, { manifestJSON, componentJS, templateName }) {
@@ -309,43 +337,6 @@ async function handleOverlaySave(_event, { manifestJSON, componentJS, templateNa
     fs.writeFileSync(path.join(dir, templateName + '.ograf.json'), manifestJSON);
     fs.writeFileSync(path.join(dir, templateName + '.js'), componentJS);
     return dir;
-}
-
-async function handleInsertTitle(_event, titleName) {
-    const resolve = await getResolve();
-    if (!resolve) {
-        console.error('InsertTitle: Resolve not available');
-        return null;
-    }
-
-    // Titles can only be inserted on the Edit page
-    const currentPage = await resolve.GetCurrentPage();
-    if (currentPage !== 'edit') {
-        const switched = await resolve.OpenPage('edit');
-        if (!switched) {
-            console.error('InsertTitle: failed to switch to Edit page');
-            return null;
-        }
-    }
-
-    const project = await getCurrentProject();
-    if (!project) {
-        console.error('InsertTitle: no current project');
-        return null;
-    }
-    const timeline = await project.GetCurrentTimeline();
-    if (!timeline) {
-        console.error('InsertTitle: no current timeline');
-        return null;
-    }
-
-    // OGraf templates load through Fusion's OGrafLoader — try as Fusion title first
-    let item = await timeline.InsertFusionTitleIntoTimeline(titleName);
-    if (!item) {
-        item = await timeline.InsertTitleIntoTimeline(titleName);
-    }
-    console.log(`InsertTitle("${titleName}"): ${item ? 'success' : 'failed — not indexed yet'}`);
-    return item;
 }
 
 function handleClaudeAbort() {
@@ -376,7 +367,9 @@ function registerIpcHandlers() {
     ipcMain.handle('claude:send', handleClaudeSend);
     ipcMain.handle('claude:abort', handleClaudeAbort);
     ipcMain.handle('overlay:save', handleOverlaySave);
-    ipcMain.handle('resolve:insertTitle', handleInsertTitle);
+    ipcMain.handle('templates:list', handleListTemplates);
+    ipcMain.handle('templates:delete', handleDeleteTemplate);
+    ipcMain.handle('templates:deleteAll', handleDeleteAllTemplates);
 }
 
 function createWindow() {

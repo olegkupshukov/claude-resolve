@@ -6,6 +6,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('btn-send').addEventListener('click', sendPrompt);
     document.getElementById('btn-stop').addEventListener('click', stopResponse);
+    document.getElementById('btn-templates').addEventListener('click', toggleTemplatesPanel);
+    document.getElementById('btn-delete-all').addEventListener('click', deleteAllTemplates);
     document.getElementById('prompt').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -91,6 +93,8 @@ function handleDone(code) {
     if (code === 0 && currentResponse) {
         const parsed = tryParseOGrafResponse(currentResponse.textContent);
         if (parsed) {
+            createPreview(currentResponse, parsed);
+
             const btnInstall = document.createElement('button');
             btnInstall.className = 'btn btn-install';
             btnInstall.textContent = 'Install';
@@ -117,35 +121,124 @@ function tryParseOGrafResponse(text) {
     };
 }
 
+function createPreview(container, parsed) {
+    const manifest = JSON.parse(parsed.manifestJSON);
+    const duration = manifest.duration || 5;
+
+    const defaults = {};
+    const props = manifest.schema && manifest.schema.properties;
+    if (props) {
+        for (const [key, prop] of Object.entries(props)) {
+            if (prop.default !== undefined) defaults[key] = prop.default;
+        }
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'preview-wrapper';
+
+    const iframe = document.createElement('iframe');
+    iframe.className = 'preview-frame';
+    iframe.sandbox = 'allow-scripts';
+
+    const iframeHTML = `<!DOCTYPE html>
+<html><head><style>
+html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden}
+#host{position:relative;width:100%;height:100%}
+</style></head><body>
+<div id="host"></div>
+<script type="module">
+const code=${JSON.stringify(parsed.componentJS)};
+const blob=new Blob([code],{type:'text/javascript'});
+const url=URL.createObjectURL(blob);
+const mod=await import(url);
+URL.revokeObjectURL(url);
+const Cls=mod.default;
+customElements.define('ograf-preview',Cls);
+const el=document.createElement('ograf-preview');
+document.getElementById('host').appendChild(el);
+await el.load({data:${JSON.stringify(defaults)}});
+await el.playAction();
+let t=0;const dur=${duration}*1000;const step=1000/30;let iv=null;
+function play(){if(iv)return;iv=setInterval(async()=>{t+=step;if(t>dur)t=0;await el.goToTime({timestamp:t})},step)}
+function pause(){if(iv){clearInterval(iv);iv=null}}
+window.addEventListener('message',e=>{if(e.data==='play')play();else if(e.data==='pause')pause()});
+play();
+<\/script></body></html>`;
+
+    iframe.srcdoc = iframeHTML;
+    wrapper.appendChild(iframe);
+
+    const btnPlay = document.createElement('button');
+    btnPlay.className = 'btn-icon btn-play';
+    btnPlay.textContent = '\u23F8';
+    let isPlaying = true;
+    btnPlay.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        iframe.contentWindow.postMessage(isPlaying ? 'play' : 'pause', '*');
+        btnPlay.textContent = isPlaying ? '\u23F8' : '\u25B6';
+    });
+    wrapper.appendChild(btnPlay);
+
+    container.appendChild(wrapper);
+    scrollToBottom();
+}
+
 async function installOGraf(btn, parsed) {
     btn.disabled = true;
     btn.textContent = 'Installing...';
     try {
         await window.overlayAPI.save(parsed);
-        btn.textContent = 'Installed \u2713';
-
-        const manifest = JSON.parse(parsed.manifestJSON);
-        const displayName = manifest.name || parsed.templateName;
-
-        const btnAdd = document.createElement('button');
-        btnAdd.className = 'btn btn-install';
-        btnAdd.textContent = 'Add to Timeline';
-        btnAdd.addEventListener('click', async () => {
-            btnAdd.disabled = true;
-            btnAdd.textContent = 'Adding...';
-            const item = await window.overlayAPI.insertTitle(displayName);
-            if (item) {
-                btnAdd.textContent = 'Added to Timeline \u2713';
-            } else {
-                btnAdd.textContent = 'Not found yet \u2014 try again or drag from Effects Library';
-                btnAdd.disabled = false;
-            }
-        });
-        btn.parentNode.insertBefore(btnAdd, btn.nextSibling);
+        btn.textContent = 'Installed \u2713 \u2014 Restart Resolve to find it in Effects Library > Titles > HTML Titles > ClaudeResolve';
     } catch (err) {
         btn.textContent = 'Install Failed';
         btn.classList.add('error');
     }
+}
+
+async function toggleTemplatesPanel() {
+    const panel = document.getElementById('templates-panel');
+    if (panel.hidden) {
+        await refreshTemplatesList();
+        panel.hidden = false;
+    } else {
+        panel.hidden = true;
+    }
+}
+
+async function refreshTemplatesList() {
+    const list = document.getElementById('templates-list');
+    const templates = await window.overlayAPI.listTemplates();
+    list.innerHTML = '';
+    if (templates.length === 0) {
+        list.textContent = 'No templates installed';
+        return;
+    }
+    for (const tpl of templates) {
+        const row = document.createElement('div');
+        row.className = 'template-row';
+
+        const name = document.createElement('span');
+        name.className = 'template-name';
+        name.textContent = tpl.name;
+
+        const del = document.createElement('button');
+        del.className = 'btn-icon btn-delete';
+        del.textContent = '\u2715';
+        del.title = 'Delete';
+        del.addEventListener('click', async () => {
+            await window.overlayAPI.deleteTemplate(tpl.folder);
+            await refreshTemplatesList();
+        });
+
+        row.appendChild(name);
+        row.appendChild(del);
+        list.appendChild(row);
+    }
+}
+
+async function deleteAllTemplates() {
+    await window.overlayAPI.deleteAllTemplates();
+    await refreshTemplatesList();
 }
 
 function addMessage(text, type) {

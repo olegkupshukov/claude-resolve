@@ -21,7 +21,9 @@ contextBridge.exposeInMainWorld('resolveAPI', {
 
 contextBridge.exposeInMainWorld('overlayAPI', {
     save: (data) => ipcRenderer.invoke('overlay:save', data),
-    insertTitle: (titleName) => ipcRenderer.invoke('resolve:insertTitle', titleName)
+    listTemplates: () => ipcRenderer.invoke('templates:list'),
+    deleteTemplate: (folder) => ipcRenderer.invoke('templates:delete', folder),
+    deleteAllTemplates: () => ipcRenderer.invoke('templates:deleteAll')
 });
 
 contextBridge.exposeInMainWorld('claudeAPI', {

@@ -150,7 +150,6 @@ body {
 }
 
 .btn-stop:active {
-    transform: scale(0.97);
     background: var(--color-text-muted);
 }
 
@@ -159,6 +158,108 @@ body {
     margin-top: var(--gap-sm);
     padding: var(--gap-xs) var(--gap-md);
     font-size: var(--font-size-sm);
+}
+
+/* OGraf preview */
+
+.preview-wrapper {
+    margin-top: var(--gap-sm);
+}
+
+.preview-frame {
+    width: 300px;
+    height: 169px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #000;
+    display: block;
+}
+
+.btn-play {
+    margin-top: var(--gap-xs);
+    font-size: var(--font-size-base);
+}
+
+/* Templates panel */
+
+#templates-panel {
+    flex-shrink: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--color-panel);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-sm);
+}
+
+#templates-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--gap-xs) var(--gap-md);
+    color: var(--color-text-muted);
+}
+
+#templates-list {
+    padding: 0 var(--gap-md) var(--gap-xs);
+    color: var(--color-text-muted);
+}
+
+.template-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--gap-xs) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.template-row:last-child {
+    border-bottom: none;
+}
+
+.template-name {
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: var(--gap-sm);
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: var(--gap-xs);
+    font-size: var(--font-size-base);
+    border-radius: var(--radius-sm);
+    transition: color var(--duration-fast) ease;
+}
+
+.btn-icon:hover {
+    color: var(--color-text);
+}
+
+.btn-icon:active {
+    transform: scale(0.95);
+}
+
+.btn-delete:hover {
+    color: var(--color-error);
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: var(--gap-xs);
+    font-size: var(--font-size-sm);
+    transition: color var(--duration-fast) ease;
+}
+
+.btn-text:hover {
+    color: var(--color-error);
 }
 
 @keyframes pulse {

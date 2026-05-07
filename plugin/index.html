@@ -18,7 +18,16 @@
 
     <div id="output"></div>
 
+    <div id="templates-panel" hidden>
+        <div id="templates-header">
+            <span>Installed Templates</span>
+            <button id="btn-delete-all" class="btn-text">Delete All</button>
+        </div>
+        <div id="templates-list"></div>
+    </div>
+
     <div id="input-bar">
+        <button id="btn-templates" class="btn-icon" title="Templates">&#9776;</button>
         <input type="text" id="prompt" placeholder="Ask Claude..." autofocus />
         <button id="btn-send" class="btn">Send</button>
         <button id="btn-stop" class="btn btn-stop" hidden>Stop</button>
