@@ -63,8 +63,21 @@ function spawnClaude() {
 }
 
 function handleStreamMessage(msg) {
+    // DEBUG: log all stream-json events (remove after investigation)
+    console.log('STREAM:', msg.type, JSON.stringify(msg).slice(0, 300));
+
     if (msg.type === 'assistant') {
         if (isContextTurn) return;
+
+        const usage = msg.message?.usage;
+        if (usage) {
+            mainWindow.webContents.send('claude:status', {
+                type: 'tokens',
+                input: usage.input_tokens || 0,
+                output: usage.output_tokens || 0
+            });
+        }
+
         const content = msg.message?.content;
         if (Array.isArray(content)) {
             for (const block of content) {

@@ -31,6 +31,7 @@ export default function App() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [templatesOpen, setTemplatesOpen] = useState(false);
     const [activeTool, setActiveTool] = useState(null);
+    const [tokenCount, setTokenCount] = useState(0);
     const nextId = useRef(0);
     const pendingCost = useRef(null);
 
@@ -60,6 +61,8 @@ export default function App() {
         window.claudeAPI.onStatus((data) => {
             if (data.type === 'tool') {
                 setActiveTool({ name: data.name, file: data.file });
+            } else if (data.type === 'tokens') {
+                setTokenCount(data.output);
             } else if (data.type === 'result') {
                 pendingCost.current = data.cost;
             }
@@ -103,6 +106,7 @@ export default function App() {
         ]);
         setIsProcessing(true);
         setActiveTool(null);
+        setTokenCount(0);
         window.claudeAPI.sendPrompt(text);
     }
 
@@ -113,7 +117,7 @@ export default function App() {
     return (
         <>
             <StatusBar />
-            <Chat messages={messages} activeTool={activeTool} />
+            <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} />
             {templatesOpen && <TemplateManager />}
             <ChatInput
                 onSend={handleSend}

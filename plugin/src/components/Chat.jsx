@@ -28,6 +28,7 @@ function OGrafActions({ parsed }) {
 function RenderMovAction({ parsed }) {
     const [status, setStatus] = useState(null);
     const [progress, setProgress] = useState(0);
+    const [errorMsg, setErrorMsg] = useState('');
 
     useEffect(() => {
         if (status !== 'rendering') return;
@@ -41,6 +42,7 @@ function RenderMovAction({ parsed }) {
     async function handleRender() {
         setStatus('rendering');
         setProgress(0);
+        setErrorMsg('');
         try {
             const result = await window.overlayAPI.renderMov({
                 html: parsed.html, fps: 25, width: 1920, height: 1080
@@ -48,9 +50,11 @@ function RenderMovAction({ parsed }) {
             if (result.success) {
                 setStatus(result.warning ? 'rendered' : 'done');
             } else {
+                setErrorMsg(result.error || 'Unknown error');
                 setStatus('error');
             }
-        } catch {
+        } catch (err) {
+            setErrorMsg(err.message || 'Unknown error');
             setStatus('error');
         }
     }
@@ -64,10 +68,10 @@ function RenderMovAction({ parsed }) {
     );
     if (status === 'done') return <button className="btn btn-install" disabled>Added to Timeline &#10003;</button>;
     if (status === 'rendered') return <button className="btn btn-install" disabled>Rendered &#10003; (import manually)</button>;
-    return <button className="btn btn-install error" disabled>Render Failed</button>;
+    return <button className="btn btn-install error" disabled title={errorMsg}>Render Failed: {errorMsg}</button>;
 }
 
-function MessageBubble({ message, activeTool }) {
+function MessageBubble({ message, activeTool, tokenCount }) {
     let className = 'message ' + message.type;
     if (message.isThinking) className += ' thinking';
     if (message.isError) className += ' error';
@@ -79,7 +83,7 @@ function MessageBubble({ message, activeTool }) {
     return (
         <div className={className}>
             {message.isThinking
-                ? <StatusIndicator tool={activeTool} />
+                ? <StatusIndicator tool={activeTool} tokens={tokenCount} />
                 : parsed
                     ? <>
                         <div className="template-card-header">
@@ -103,7 +107,7 @@ function MessageBubble({ message, activeTool }) {
     );
 }
 
-export default function Chat({ messages, activeTool }) {
+export default function Chat({ messages, activeTool, tokenCount }) {
     const outputRef = useRef(null);
 
     useEffect(() => {
@@ -115,7 +119,7 @@ export default function Chat({ messages, activeTool }) {
     return (
         <div id="output" ref={outputRef}>
             {messages.map(msg => (
-                <MessageBubble key={msg.id} message={msg} activeTool={msg.isThinking ? activeTool : null} />
+                <MessageBubble key={msg.id} message={msg} activeTool={msg.isThinking ? activeTool : null} tokenCount={msg.isThinking ? tokenCount : 0} />
             ))}
         </div>
     );

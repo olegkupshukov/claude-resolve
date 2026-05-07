@@ -1,8 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const { getResolve, getCurrentProject } = require('./resolve');
+
+// Resolve Python path at load time — bare 'python' may not be on Resolve's PATH
+let PYTHON_PATH = 'python';
+try {
+    PYTHON_PATH = execSync('python -c "import sys; print(sys.executable)"', { encoding: 'utf-8' }).trim();
+} catch (_e) { /* fallback to bare 'python' */ }
 
 const TEMPLATE_DIR = path.join(
     process.env.APPDATA,
@@ -71,8 +77,10 @@ async function handleRenderMov(_event, { html, fps = 25, width = 1920, height = 
 
     const renderScript = path.join(__dirname, '..', 'renderer', 'render.py');
 
+    console.log('RENDER: python=' + PYTHON_PATH, 'script=' + renderScript, 'html=' + htmlPath, 'out=' + movPath);
+
     return new Promise((resolve) => {
-        const proc = spawn('python', [
+        const proc = spawn(PYTHON_PATH, [
             renderScript, htmlPath,
             '--fps', String(fps),
             '--width', String(width),
@@ -81,6 +89,7 @@ async function handleRenderMov(_event, { html, fps = 25, width = 1920, height = 
         ], { shell: true });
 
         let buf = '';
+        let stderrBuf = '';
 
         proc.stdout.on('data', (chunk) => {
             buf += chunk.toString();
@@ -95,9 +104,16 @@ async function handleRenderMov(_event, { html, fps = 25, width = 1920, height = 
             }
         });
 
+        proc.stderr.on('data', (chunk) => {
+            stderrBuf += chunk.toString();
+            console.log('RENDER STDERR:', chunk.toString());
+        });
+
         proc.on('close', async (code) => {
+            console.log('RENDER EXIT:', code, stderrBuf.slice(0, 500));
             if (code !== 0) {
-                resolve({ success: false, error: 'Render process failed' });
+                const errMsg = stderrBuf.trim().split('\n').pop() || 'Render process exited with code ' + code;
+                resolve({ success: false, error: errMsg });
                 return;
             }
             try {
@@ -109,7 +125,8 @@ async function handleRenderMov(_event, { html, fps = 25, width = 1920, height = 
         });
 
         proc.on('error', (err) => {
-            resolve({ success: false, error: err.message });
+            console.log('RENDER SPAWN ERROR:', err.message);
+            resolve({ success: false, error: 'Failed to spawn: ' + err.message });
         });
     });
 }
