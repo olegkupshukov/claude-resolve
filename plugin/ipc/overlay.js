@@ -4,11 +4,35 @@ const os = require('os');
 const { spawn, execSync } = require('child_process');
 const { getResolve, getCurrentProject } = require('./resolve');
 
-// Resolve Python path at load time — bare 'python' may not be on Resolve's PATH
-let PYTHON_PATH = 'python';
-try {
-    PYTHON_PATH = execSync('python -c "import sys; print(sys.executable)"', { encoding: 'utf-8' }).trim();
-} catch (_e) { /* fallback to bare 'python' */ }
+// Resolve executable paths at load time — Resolve's Electron may have a stripped PATH
+function findExecutable(candidates, verifyCmd) {
+    // Try shell lookup first (inherits system PATH)
+    try {
+        const found = execSync(verifyCmd, { encoding: 'utf-8', shell: true }).trim();
+        if (found && fs.existsSync(found)) return found;
+    } catch (_e) { /* continue to candidates */ }
+    // Try known install locations
+    for (const p of candidates) {
+        if (fs.existsSync(p)) return p;
+    }
+    return candidates[0]; // last resort
+}
+
+const PYTHON_PATH = findExecutable([
+    path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WindowsApps', 'python.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python314', 'python.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python313', 'python.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python312', 'python.exe'),
+    'python'
+], 'python -c "import sys; print(sys.executable)"');
+
+const FFMPEG_PATH = findExecutable([
+    path.join(process.env.PROGRAMFILES || '', 'FFmpeg', 'ffmpeg.exe'),
+    path.join(process.env.PROGRAMFILES || '', 'FFmpeg', 'bin', 'ffmpeg.exe'),
+    'ffmpeg'
+], 'where ffmpeg');
+
+console.log('RESOLVED: python=' + PYTHON_PATH, 'ffmpeg=' + FFMPEG_PATH);
 
 const TEMPLATE_DIR = path.join(
     process.env.APPDATA,
@@ -85,8 +109,9 @@ async function handleRenderMov(_event, { html, fps = 25, width = 1920, height = 
             '--fps', String(fps),
             '--width', String(width),
             '--height', String(height),
-            '--output', movPath
-        ], { shell: true });
+            '--output', movPath,
+            '--ffmpeg', FFMPEG_PATH
+        ]);
 
         let buf = '';
         let stderrBuf = '';

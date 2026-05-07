@@ -35,6 +35,7 @@ def main():
     parser.add_argument("--width", type=int, default=1920)
     parser.add_argument("--height", type=int, default=1080)
     parser.add_argument("--output", required=True, help="Output .mov path")
+    parser.add_argument("--ffmpeg", default="ffmpeg", help="Path to ffmpeg executable")
     args = parser.parse_args()
 
     html_path = Path(args.html_path).resolve()
@@ -73,7 +74,7 @@ def main():
 
         # Encode to ProRes 4444 with alpha channel
         ffmpeg_cmd = [
-            "ffmpeg", "-y",
+            args.ffmpeg, "-y",
             "-framerate", str(args.fps),
             "-i", os.path.join(frames_dir, "frame_%06d.png"),
             "-c:v", "prores_ks",
