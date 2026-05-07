@@ -91,11 +91,11 @@ function handleDone(code) {
     if (code === 0 && currentResponse) {
         const parsed = tryParseOGrafResponse(currentResponse.textContent);
         if (parsed) {
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-install';
-            btn.textContent = 'Install & Add to Timeline';
-            btn.addEventListener('click', () => installOGraf(btn, parsed));
-            currentResponse.appendChild(btn);
+            const btnInstall = document.createElement('button');
+            btnInstall.className = 'btn btn-install';
+            btnInstall.textContent = 'Install';
+            btnInstall.addEventListener('click', () => installOGraf(btnInstall, parsed));
+            currentResponse.appendChild(btnInstall);
         }
     }
 
@@ -122,24 +122,26 @@ async function installOGraf(btn, parsed) {
     btn.textContent = 'Installing...';
     try {
         await window.overlayAPI.save(parsed);
+        btn.textContent = 'Installed \u2713';
+
         const manifest = JSON.parse(parsed.manifestJSON);
         const displayName = manifest.name || parsed.templateName;
-        btn.textContent = 'Waiting for Resolve to index...';
-        const item = await window.overlayAPI.insertTitle(displayName);
-        if (item) {
-            btn.textContent = 'Added to Timeline';
-        } else {
-            // All retries failed — offer manual retry button
-            btn.textContent = 'Add to Timeline';
-            btn.disabled = false;
-            btn.addEventListener('click', async function retry() {
-                btn.removeEventListener('click', retry);
-                btn.disabled = true;
-                btn.textContent = 'Inserting...';
-                const retryItem = await window.overlayAPI.insertTitle(displayName);
-                btn.textContent = retryItem ? 'Added to Timeline' : 'Not found — drag from Effects Library';
-            }, { once: true });
-        }
+
+        const btnAdd = document.createElement('button');
+        btnAdd.className = 'btn btn-install';
+        btnAdd.textContent = 'Add to Timeline';
+        btnAdd.addEventListener('click', async () => {
+            btnAdd.disabled = true;
+            btnAdd.textContent = 'Adding...';
+            const item = await window.overlayAPI.insertTitle(displayName);
+            if (item) {
+                btnAdd.textContent = 'Added to Timeline \u2713';
+            } else {
+                btnAdd.textContent = 'Not found yet \u2014 try again or drag from Effects Library';
+                btnAdd.disabled = false;
+            }
+        });
+        btn.parentNode.insertBefore(btnAdd, btn.nextSibling);
     } catch (err) {
         btn.textContent = 'Install Failed';
         btn.classList.add('error');
