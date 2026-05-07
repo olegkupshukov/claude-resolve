@@ -20,7 +20,9 @@ export default function App() {
     const [messages, setMessages] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [templatesOpen, setTemplatesOpen] = useState(false);
+    const [activeTool, setActiveTool] = useState(null);
     const nextId = useRef(0);
+    const pendingCost = useRef(null);
 
     useEffect(() => {
         function appendToLast(data) {
@@ -39,8 +41,19 @@ export default function App() {
             });
         }
 
-        window.claudeAPI.onOutput(appendToLast);
+        window.claudeAPI.onOutput((data) => {
+            setActiveTool(null);
+            appendToLast(data);
+        });
         window.claudeAPI.onError(appendToLast);
+
+        window.claudeAPI.onStatus((data) => {
+            if (data.type === 'tool') {
+                setActiveTool({ name: data.name, file: data.file });
+            } else if (data.type === 'result') {
+                pendingCost.current = data.cost;
+            }
+        });
 
         window.claudeAPI.onDone((code) => {
             setMessages(prev => {
@@ -56,9 +69,12 @@ export default function App() {
                 }
                 if (code === 1) msg.isError = true;
                 if (code === 0) msg.parsed = tryParseOGrafResponse(msg.text);
+                msg.cost = pendingCost.current;
                 updated[updated.length - 1] = msg;
                 return updated;
             });
+            pendingCost.current = null;
+            setActiveTool(null);
             setIsProcessing(false);
         });
 
@@ -76,6 +92,7 @@ export default function App() {
             { id: assistantId, type: 'assistant', text: 'Thinking...', isThinking: true, isError: false, parsed: null }
         ]);
         setIsProcessing(true);
+        setActiveTool(null);
         window.claudeAPI.sendPrompt(text);
     }
 
@@ -86,7 +103,7 @@ export default function App() {
     return (
         <>
             <StatusBar />
-            <Chat messages={messages} />
+            <Chat messages={messages} activeTool={activeTool} />
             {templatesOpen && <TemplateManager />}
             <ChatInput
                 onSend={handleSend}

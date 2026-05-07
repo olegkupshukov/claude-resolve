@@ -6,6 +6,11 @@
 
 html, body, #root {
     height: 100%;
+    overflow: hidden;
+}
+
+html::-webkit-scrollbar {
+    display: none;
 }
 
 body, #root {
@@ -263,6 +268,24 @@ body, #root {
     color: var(--color-error);
 }
 
+/* Status indicator */
+
+.status-indicator {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+    opacity: 1;
+    transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.message-cost {
+    display: block;
+    margin-top: var(--gap-xs);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    opacity: 0.7;
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
@@ -274,5 +297,8 @@ body, #root {
     }
     .message.thinking {
         animation: none;
+    }
+    .status-indicator {
+        transition: none;
     }
 }

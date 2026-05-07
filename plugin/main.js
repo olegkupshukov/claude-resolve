@@ -163,6 +163,12 @@ function handleStreamMessage(msg) {
             for (const block of content) {
                 if (block.type === 'text' && block.text) {
                     mainWindow.webContents.send('claude:stdout', block.text);
+                } else if (block.type === 'tool_use') {
+                    mainWindow.webContents.send('claude:status', {
+                        type: 'tool',
+                        name: block.name,
+                        file: block.input?.file_path || block.input?.path || block.input?.pattern || block.input?.command || null
+                    });
                 }
             }
         }
@@ -171,6 +177,11 @@ function handleStreamMessage(msg) {
             isContextTurn = false;
             return;
         }
+        mainWindow.webContents.send('claude:status', {
+            type: 'result',
+            cost: msg.total_cost_usd ?? null,
+            duration: msg.duration_ms ?? null
+        });
         mainWindow.webContents.send('claude:done', msg.is_error ? 1 : 0);
     }
 }

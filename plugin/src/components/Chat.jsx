@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import Preview from './Preview';
+import StatusIndicator from './StatusIndicator';
 
-function MessageBubble({ message }) {
+function MessageBubble({ message, activeTool }) {
     const [installStatus, setInstallStatus] = useState(null);
 
     let className = 'message ' + message.type;
@@ -37,14 +38,19 @@ function MessageBubble({ message }) {
 
     return (
         <div className={className}>
-            {message.text}
+            {message.isThinking
+                ? <StatusIndicator tool={activeTool} />
+                : message.text}
             {message.parsed && <Preview parsed={message.parsed} />}
             {installBtn}
+            {message.cost != null && (
+                <span className="message-cost">${message.cost.toFixed(4)}</span>
+            )}
         </div>
     );
 }
 
-export default function Chat({ messages }) {
+export default function Chat({ messages, activeTool }) {
     const outputRef = useRef(null);
 
     useEffect(() => {
@@ -56,7 +62,7 @@ export default function Chat({ messages }) {
     return (
         <div id="output" ref={outputRef}>
             {messages.map(msg => (
-                <MessageBubble key={msg.id} message={msg} />
+                <MessageBubble key={msg.id} message={msg} activeTool={msg.isThinking ? activeTool : null} />
             ))}
         </div>
     );

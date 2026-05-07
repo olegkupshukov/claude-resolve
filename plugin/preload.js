@@ -31,5 +31,6 @@ contextBridge.exposeInMainWorld('claudeAPI', {
     abort: () => ipcRenderer.invoke('claude:abort'),
     onOutput: (callback) => ipcRenderer.on('claude:stdout', (_e, data) => callback(data)),
     onError: (callback) => ipcRenderer.on('claude:stderr', (_e, data) => callback(data)),
-    onDone: (callback) => ipcRenderer.on('claude:done', (_e, code) => callback(code))
+    onDone: (callback) => ipcRenderer.on('claude:done', (_e, code) => callback(code)),
+    onStatus: (callback) => ipcRenderer.on('claude:status', (_e, data) => callback(data))
 });
