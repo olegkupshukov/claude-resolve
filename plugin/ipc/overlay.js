@@ -88,7 +88,8 @@ async function importToTimeline(movPath) {
 
     const project = await getCurrentProject();
     const mediaPool = await project.GetMediaPool();
-    await mediaPool.AppendToTimeline(clips);
+    const clipInfos = clips.map(c => ({ mediaPoolItem: c, trackIndex: 2 }));
+    await mediaPool.AppendToTimeline(clipInfos);
 }
 
 async function handleRenderMov(_event, { html, fps = 25, width = 1920, height = 1080 }) {

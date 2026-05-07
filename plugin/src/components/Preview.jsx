@@ -63,13 +63,39 @@ play();
 }
 
 function HTMLPreview({ parsed }) {
+    const iframeRef = useRef(null);
+    const [isPlaying, setIsPlaying] = useState(true);
+
+    const srcdoc = useMemo(() => {
+        const playScript = `<script>
+(function(){
+var fps=25,dur=window.getAnimationDuration(),total=Math.ceil(dur*fps),f=0,running=true;
+function tick(){if(!running){requestAnimationFrame(tick);return}
+window.renderFrame(f,fps);f=(f+1)%total;requestAnimationFrame(tick)}
+window.addEventListener('message',function(e){if(e.data==='play')running=true;else if(e.data==='pause')running=false});
+tick();
+})();
+<\/script>`;
+        return parsed.html + playScript;
+    }, [parsed]);
+
+    function togglePlay() {
+        const next = !isPlaying;
+        setIsPlaying(next);
+        iframeRef.current?.contentWindow?.postMessage(next ? 'play' : 'pause', '*');
+    }
+
     return (
         <div className="preview-wrapper">
             <iframe
+                ref={iframeRef}
                 className="preview-frame"
                 sandbox="allow-scripts"
-                srcDoc={parsed.html}
+                srcDoc={srcdoc}
             />
+            <button className="btn-icon btn-play" onClick={togglePlay}>
+                {isPlaying ? '\u23F8' : '\u25B6'}
+            </button>
         </div>
     );
 }
