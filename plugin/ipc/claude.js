@@ -63,6 +63,9 @@ function spawnClaude() {
 }
 
 function handleStreamMessage(msg) {
+    // DEBUG: temporary — remove after verifying stream events
+    console.log('STREAM:', msg.type, msg.subtype || '', JSON.stringify(msg).slice(0, 400));
+
     if (msg.type === 'assistant') {
         if (isContextTurn) return;
 
