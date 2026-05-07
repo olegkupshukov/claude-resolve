@@ -339,17 +339,24 @@ async function handleInsertTitle(_event, titleName) {
         return null;
     }
 
-    // Wait for Resolve to rescan template directory after new files were written
-    await new Promise(r => setTimeout(r, 2000));
+    // Retry loop — Resolve needs time to index newly written template files
+    const MAX_ATTEMPTS = 5;
+    const RETRY_DELAY = 1000;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        await new Promise(r => setTimeout(r, RETRY_DELAY));
 
-    // OGraf templates load through Fusion's OGrafLoader — try as Fusion title first
-    let item = await timeline.InsertFusionTitleIntoTimeline(titleName);
-    if (!item) {
-        // Fallback: try standard title insertion
-        item = await timeline.InsertTitleIntoTimeline(titleName);
+        let item = await timeline.InsertFusionTitleIntoTimeline(titleName);
+        if (!item) {
+            item = await timeline.InsertTitleIntoTimeline(titleName);
+        }
+        if (item) {
+            console.log(`InsertTitle("${titleName}"): success on attempt ${attempt}`);
+            return item;
+        }
+        console.log(`InsertTitle("${titleName}"): attempt ${attempt}/${MAX_ATTEMPTS} — not indexed yet`);
     }
-    console.log(`InsertTitle("${titleName}"): ${item ? 'success' : 'failed — title not found in Effects Library'}`);
-    return item;
+    console.log(`InsertTitle("${titleName}"): failed after ${MAX_ATTEMPTS} attempts`);
+    return null;
 }
 
 function handleClaudeAbort() {

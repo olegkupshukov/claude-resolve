@@ -122,12 +122,24 @@ async function installOGraf(btn, parsed) {
     btn.textContent = 'Installing...';
     try {
         await window.overlayAPI.save(parsed);
-        // Use the manifest display name — Resolve indexes titles by this field
         const manifest = JSON.parse(parsed.manifestJSON);
         const displayName = manifest.name || parsed.templateName;
-        btn.textContent = 'Waiting for Resolve...';
+        btn.textContent = 'Waiting for Resolve to index...';
         const item = await window.overlayAPI.insertTitle(displayName);
-        btn.textContent = item ? 'Added to Timeline' : 'Installed (add manually)';
+        if (item) {
+            btn.textContent = 'Added to Timeline';
+        } else {
+            // All retries failed — offer manual retry button
+            btn.textContent = 'Add to Timeline';
+            btn.disabled = false;
+            btn.addEventListener('click', async function retry() {
+                btn.removeEventListener('click', retry);
+                btn.disabled = true;
+                btn.textContent = 'Inserting...';
+                const retryItem = await window.overlayAPI.insertTitle(displayName);
+                btn.textContent = retryItem ? 'Added to Timeline' : 'Not found — drag from Effects Library';
+            }, { once: true });
+        }
     } catch (err) {
         btn.textContent = 'Install Failed';
         btn.classList.add('error');
