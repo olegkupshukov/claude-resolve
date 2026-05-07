@@ -238,7 +238,10 @@ const STYLE_TEXT = \`
 :host { position: absolute; inset: 0; display: block; pointer-events: none; font-family: Arial, sans-serif; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 .scene { position: absolute; inset: 0; opacity: 0; will-change: opacity; }
+/* EVERY animated element needs will-change for its animated properties */
+/* Example: .title { will-change: transform, opacity; } */
 /* Use CSS custom properties for colors: var(--primary-color) */
+/* NEVER use CSS transition or animation properties — they cause flickering */
 \`;
 
 class MyGraphic extends HTMLElement {
@@ -249,6 +252,8 @@ class MyGraphic extends HTMLElement {
     // Create style element, scene div, build all DOM elements
     // Store refs in this._elements = { scene, ... }
   }
+
+  connectedCallback() {}
 
   async load(params) { this._state = { ...DEFAULT_STATE, ...(params.data || {}) }; this._applyState(); this._setFrame(0); return { statusCode: 200 }; }
   async dispose() { this._elements.scene.remove(); return { statusCode: 200 }; }
@@ -263,9 +268,11 @@ class MyGraphic extends HTMLElement {
 
   _setFrame(seconds) {
     // DETERMINISTIC: position ALL elements based on seconds alone
-    // Hidden state: if (seconds < 0 || seconds > duration) { scene.opacity = "0"; return; }
+    // Hidden state must reset ALL animated properties:
+    // if (seconds < 0 || seconds > duration) { scene.opacity = "0"; element.transform = "translateX(-100%)"; ... return; }
     // Use phased animation: each element animates in sequence
     // Phase pattern: easeOutCubic(clamp((seconds - startTime) / phaseDuration, 0, 1))
+    // Use .toFixed(1) for sub-pixel values to avoid float noise
   }
 }
 
@@ -276,9 +283,14 @@ export default MyGraphic;
 - goToTime() receives { timestamp } in MILLISECONDS — divide by 1000 for seconds
 - DETERMINISTIC: same timestamp must always produce identical output
 - NO timers: no setTimeout, setInterval, requestAnimationFrame
-- NO CSS animations with .play() — calculate all positions manually in _setFrame()
+- NO CSS transition property — causes flickering on CPU frame capture
+- NO CSS animation property or .play() — calculate all positions manually in _setFrame()
 - NO external dependencies, no fetch, no CDN
 - NO customElements.define() — the host registers the element
+- Add will-change to EVERY animated element for the properties it animates
+- Hidden state in _setFrame must reset ALL animated properties (opacity, transform, etc.)
+- Use .toFixed(1) for sub-pixel transform values
+- Include connectedCallback() {} — OGrafLoader expects it
 - Use Shadow DOM: this.attachShadow({ mode: "open" })
 - Export as default: export default ClassName;
 
