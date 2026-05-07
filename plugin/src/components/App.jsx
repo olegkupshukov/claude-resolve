@@ -91,9 +91,13 @@ export default function App() {
             setIsProcessing(false);
         });
 
-        window.addEventListener('beforeunload', () => {
+        function handleUnload() {
             window.resolveAPI.cleanup();
-        });
+        }
+        window.addEventListener('beforeunload', handleUnload);
+        // IPC listeners (onOutput/onError/onDone/onStatus) are not cleaned up
+        // because App is the root component and never unmounts.
+        return () => window.removeEventListener('beforeunload', handleUnload);
     }, []);
 
     function handleSend(text) {

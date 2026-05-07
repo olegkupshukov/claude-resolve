@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, memo } from 'react';
 
 function OGrafPreview({ parsed }) {
     const iframeRef = useRef(null);
@@ -62,21 +62,31 @@ play();
     );
 }
 
-function HTMLPreview({ parsed }) {
+const HTMLPreview = memo(function HTMLPreview({ parsed }) {
     const iframeRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(true);
 
     const srcdoc = useMemo(() => {
         const playScript = `<script>
 document.addEventListener('DOMContentLoaded',function(){
-var fps=25,dur=window.getAnimationDuration(),total=Math.ceil(dur*fps),f=0,running=true;
-function tick(){if(!running){requestAnimationFrame(tick);return}
-window.renderFrame(f,fps);f=(f+1)%total;requestAnimationFrame(tick)}
+if(typeof window.getAnimationDuration!=='function'||typeof window.renderFrame!=='function')return;
+var fps=25,dur=window.getAnimationDuration(),total=Math.ceil(dur*fps);
+var running=true,startTime=null,lastFrame=-1;
+function tick(ts){
+if(!running){startTime=null;requestAnimationFrame(tick);return}
+if(!startTime)startTime=ts;
+var elapsed=ts-startTime;
+var f=Math.floor(elapsed/(1000/fps))%total;
+if(f!==lastFrame){window.renderFrame(f,fps);lastFrame=f}
+requestAnimationFrame(tick)}
 window.addEventListener('message',function(e){if(e.data==='play')running=true;else if(e.data==='pause')running=false});
-tick();
+requestAnimationFrame(tick);
 });
 <\/script>`;
-        const html = parsed.html;
+        const scaleStyle = `<style>html{transform-origin:top left;transform:scale(calc(100vw/1920));width:1920px;height:1080px;overflow:hidden}</style>`;
+        let html = parsed.html;
+        if (html.includes('</head>')) html = html.replace('</head>', scaleStyle + '</head>');
+        else html = scaleStyle + html;
         if (html.includes('</body>')) return html.replace('</body>', playScript + '</body>');
         if (html.includes('</html>')) return html.replace('</html>', playScript + '</html>');
         return html + playScript;
@@ -101,7 +111,7 @@ tick();
             </button>
         </div>
     );
-}
+});
 
 export default function Preview({ parsed }) {
     if (parsed.type === 'html') return <HTMLPreview parsed={parsed} />;

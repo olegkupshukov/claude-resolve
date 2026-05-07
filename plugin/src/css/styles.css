@@ -127,8 +127,10 @@ body, #root {
                 background var(--duration-normal) ease;
 }
 
-.btn:hover {
-    background: var(--color-accent-hover);
+@media (hover: hover) and (pointer: fine) {
+    .btn:hover {
+        background: var(--color-accent-hover);
+    }
 }
 
 .btn:active {
@@ -151,8 +153,10 @@ body, #root {
     background: var(--color-border);
 }
 
-.btn-stop:hover {
-    background: var(--color-text-muted);
+@media (hover: hover) and (pointer: fine) {
+    .btn-stop:hover {
+        background: var(--color-text-muted);
+    }
 }
 
 .btn-stop:active {
@@ -207,8 +211,10 @@ body, #root {
     user-select: none;
 }
 
-.code-toggle summary:hover {
-    color: var(--color-text);
+@media (hover: hover) and (pointer: fine) {
+    .code-toggle summary:hover {
+        color: var(--color-text);
+    }
 }
 
 .code-block {
@@ -235,7 +241,6 @@ body, #root {
 
 .preview-frame {
     width: 100%;
-    height: auto;
     aspect-ratio: 16 / 9;
     border: none;
     border-radius: var(--radius-md);
@@ -304,16 +309,20 @@ body, #root {
     transition: color var(--duration-fast) ease;
 }
 
-.btn-icon:hover {
-    color: var(--color-text);
+@media (hover: hover) and (pointer: fine) {
+    .btn-icon:hover {
+        color: var(--color-text);
+    }
 }
 
 .btn-icon:active {
     transform: scale(0.95);
 }
 
-.btn-delete:hover {
-    color: var(--color-error);
+@media (hover: hover) and (pointer: fine) {
+    .btn-delete:hover {
+        color: var(--color-error);
+    }
 }
 
 .btn-text {
@@ -326,8 +335,10 @@ body, #root {
     transition: color var(--duration-fast) ease;
 }
 
-.btn-text:hover {
-    color: var(--color-error);
+@media (hover: hover) and (pointer: fine) {
+    .btn-text:hover {
+        color: var(--color-error);
+    }
 }
 
 /* Status indicator */

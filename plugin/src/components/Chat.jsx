@@ -112,7 +112,9 @@ export default function Chat({ messages, activeTool, tokenCount }) {
 
     useEffect(() => {
         if (outputRef.current) {
-            outputRef.current.scrollTop = outputRef.current.scrollHeight;
+            requestAnimationFrame(() => {
+                outputRef.current.scrollTop = outputRef.current.scrollHeight;
+            });
         }
     }, [messages]);
 

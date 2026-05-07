@@ -63,9 +63,6 @@ function spawnClaude() {
 }
 
 function handleStreamMessage(msg) {
-    // DEBUG: log all stream-json events (remove after investigation)
-    console.log('STREAM:', msg.type, JSON.stringify(msg).slice(0, 300));
-
     if (msg.type === 'assistant') {
         if (isContextTurn) return;
 
