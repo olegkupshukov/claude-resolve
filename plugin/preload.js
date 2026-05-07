@@ -29,7 +29,10 @@ contextBridge.exposeInMainWorld('overlayAPI', {
     },
     listTemplates: () => ipcRenderer.invoke('templates:list'),
     deleteTemplate: (folder) => ipcRenderer.invoke('templates:delete', folder),
-    deleteAllTemplates: () => ipcRenderer.invoke('templates:deleteAll')
+    deleteAllTemplates: () => ipcRenderer.invoke('templates:deleteAll'),
+    listRenders: () => ipcRenderer.invoke('renders:list'),
+    deleteRender: (name) => ipcRenderer.invoke('renders:delete', name),
+    deleteAllRenders: () => ipcRenderer.invoke('renders:deleteAll')
 });
 
 contextBridge.exposeInMainWorld('claudeAPI', {

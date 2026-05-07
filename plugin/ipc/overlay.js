@@ -40,6 +40,17 @@ const TEMPLATE_DIR = path.join(
     'Fusion', 'Templates', 'Edit', 'Titles', 'HTML Titles', 'ClaudeResolve'
 );
 
+const RENDER_DIR = path.join(
+    process.env.APPDATA,
+    'Blackmagic Design', 'DaVinci Resolve', 'Claude Resolve', 'renders'
+);
+
+function renderFilename(name) {
+    const safe = (name || 'Overlay').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15);
+    return `${safe}_${ts}.mov`;
+}
+
 function handleListTemplates() {
     if (!fs.existsSync(TEMPLATE_DIR)) return [];
     const entries = fs.readdirSync(TEMPLATE_DIR, { withFileTypes: true });
@@ -156,12 +167,13 @@ async function importToTimeline(movPath) {
     }]);
 }
 
-async function handleRenderMov(_event, { html, fps = 25, width = 1920, height = 1080 }) {
+async function handleRenderMov(_event, { html, name, fps = 25, width = 1920, height = 1080 }) {
     const tempDir = path.join(os.tmpdir(), 'claude_resolve_' + Date.now());
     fs.mkdirSync(tempDir, { recursive: true });
+    fs.mkdirSync(RENDER_DIR, { recursive: true });
 
     const htmlPath = path.join(tempDir, 'overlay.html');
-    const movPath = path.join(tempDir, 'overlay.mov');
+    const movPath = path.join(RENDER_DIR, renderFilename(name));
     fs.writeFileSync(htmlPath, html);
 
     const renderScript = path.join(__dirname, '..', 'renderer', 'render.py');
@@ -221,6 +233,30 @@ async function handleRenderMov(_event, { html, fps = 25, width = 1920, height = 
     });
 }
 
+function handleListRenders() {
+    if (!fs.existsSync(RENDER_DIR)) return [];
+    return fs.readdirSync(RENDER_DIR)
+        .filter(f => f.endsWith('.mov'))
+        .map(f => {
+            const stat = fs.statSync(path.join(RENDER_DIR, f));
+            return { name: f, size: stat.size };
+        });
+}
+
+function handleDeleteRender(_event, name) {
+    const p = path.join(RENDER_DIR, name);
+    if (!fs.existsSync(p)) return false;
+    fs.rmSync(p);
+    return true;
+}
+
+function handleDeleteAllRenders() {
+    if (!fs.existsSync(RENDER_DIR)) return false;
+    fs.rmSync(RENDER_DIR, { recursive: true, force: true });
+    fs.mkdirSync(RENDER_DIR, { recursive: true });
+    return true;
+}
+
 function setupOverlayHandlers(ipcMain, win) {
     mainWindow = win;
     ipcMain.handle('overlay:save', handleOverlaySave);
@@ -228,6 +264,9 @@ function setupOverlayHandlers(ipcMain, win) {
     ipcMain.handle('templates:list', handleListTemplates);
     ipcMain.handle('templates:delete', handleDeleteTemplate);
     ipcMain.handle('templates:deleteAll', handleDeleteAllTemplates);
+    ipcMain.handle('renders:list', handleListRenders);
+    ipcMain.handle('renders:delete', handleDeleteRender);
+    ipcMain.handle('renders:deleteAll', handleDeleteAllRenders);
 }
 
 module.exports = { setupOverlayHandlers };

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, memo } from 'react';
+import React, { useRef, useState, useEffect, useMemo, memo } from 'react';
 
 function OGrafPreview({ parsed }) {
     const iframeRef = useRef(null);
@@ -64,7 +64,21 @@ play();
 
 const HTMLPreview = memo(function HTMLPreview({ parsed }) {
     const iframeRef = useRef(null);
+    const containerRef = useRef(null);
+    const [scale, setScale] = useState(1);
     const [isPlaying, setIsPlaying] = useState(true);
+
+    useEffect(() => {
+        function updateScale() {
+            if (containerRef.current) {
+                setScale(containerRef.current.clientWidth / 1920);
+            }
+        }
+        updateScale();
+        const obs = new ResizeObserver(updateScale);
+        if (containerRef.current) obs.observe(containerRef.current);
+        return () => obs.disconnect();
+    }, []);
 
     const srcdoc = useMemo(() => {
         const playScript = `<script>
@@ -83,10 +97,7 @@ window.addEventListener('message',function(e){if(e.data==='play')running=true;el
 requestAnimationFrame(tick);
 });
 <\/script>`;
-        const scaleStyle = `<style>html{transform-origin:top left;transform:scale(calc(100vw/1920));width:1920px;height:1080px;overflow:hidden}</style>`;
-        let html = parsed.html;
-        if (html.includes('</head>')) html = html.replace('</head>', scaleStyle + '</head>');
-        else html = scaleStyle + html;
+        const html = parsed.html;
         if (html.includes('</body>')) return html.replace('</body>', playScript + '</body>');
         if (html.includes('</html>')) return html.replace('</html>', playScript + '</html>');
         return html + playScript;
@@ -100,12 +111,17 @@ requestAnimationFrame(tick);
 
     return (
         <div className="preview-wrapper">
-            <iframe
-                ref={iframeRef}
-                className="preview-frame"
-                sandbox="allow-scripts"
-                srcDoc={srcdoc}
-            />
+            <div ref={containerRef} className="preview-scale-container">
+                <iframe
+                    ref={iframeRef}
+                    className="preview-frame-native"
+                    width="1920"
+                    height="1080"
+                    sandbox="allow-scripts"
+                    srcDoc={srcdoc}
+                    style={{ transform: `scale(${scale})` }}
+                />
+            </div>
             <button className="btn-icon btn-play" onClick={togglePlay}>
                 {isPlaying ? '\u23F8' : '\u25B6'}
             </button>
