@@ -636,7 +636,7 @@ body, #root {
 .welcome-subtitle {
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
-    margin-bottom: var(--gap-md);
+    margin-bottom: var(--gap-xs);
 }
 
 .welcome-separator {
@@ -690,6 +690,34 @@ body, #root {
 @media (hover: hover) and (pointer: fine) {
     .welcome-blank-link:hover {
         color: var(--color-text);
+    }
+}
+
+.welcome-author {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-bottom: var(--gap-md);
+}
+
+.welcome-footer-links {
+    display: flex;
+    justify-content: center;
+    gap: var(--gap-md);
+    margin-top: var(--gap-sm);
+}
+
+.welcome-ext-link {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    transition: color var(--duration-normal) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .welcome-ext-link:hover {
+        color: var(--color-accent);
     }
 }
 

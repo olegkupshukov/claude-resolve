@@ -2,7 +2,7 @@
 // Sandboxed Electron app loaded by DaVinci Resolve as a Workflow Integration Plugin.
 // IPC handlers are split into ipc/ modules.
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const { setupResolveHandlers } = require('./ipc/resolve');
 const { setupClaudeHandlers, cleanupClaude } = require('./ipc/claude');
@@ -37,6 +37,9 @@ app.whenReady().then(async () => {
     setupConfigHandlers(ipcMain);
     ipcMain.handle('window:resize', (_event, { width, height }) => {
         mainWindow.setSize(width, height);
+    });
+    ipcMain.handle('shell:openExternal', (_event, url) => {
+        shell.openExternal(url);
     });
 });
 

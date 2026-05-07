@@ -76,6 +76,7 @@ export default function WelcomeScreen({ authState, onAuthStateChange, onStart, o
             <div className="welcome-content">
                 <h1 className="welcome-title">Claude Resolve</h1>
                 <p className="welcome-subtitle">AI Motion Graphics for DaVinci Resolve</p>
+                <p className="welcome-author">by Oleg Kupshukov</p>
                 <div className="mode-cards">
                     <button
                         className={`mode-card${mode === 'mov' ? ' mode-card-active' : ''}`}
@@ -105,6 +106,10 @@ export default function WelcomeScreen({ authState, onAuthStateChange, onStart, o
                 <button className="welcome-blank-link" onClick={onDismiss}>
                     Start with a blank prompt
                 </button>
+                <div className="welcome-footer-links">
+                    <button className="welcome-ext-link" onClick={() => window.windowAPI.openExternal('https://github.com/olegkupshukov/claude-resolve')}>GitHub</button>
+                    <button className="welcome-ext-link" onClick={() => window.windowAPI.openExternal('https://instagram.com/olegkupshukov')}>Instagram</button>
+                </div>
             </div>
         </div>
     );

@@ -50,7 +50,8 @@ contextBridge.exposeInMainWorld('claudeAPI', {
 });
 
 contextBridge.exposeInMainWorld('windowAPI', {
-    resize: ({ width, height }) => ipcRenderer.invoke('window:resize', { width, height })
+    resize: ({ width, height }) => ipcRenderer.invoke('window:resize', { width, height }),
+    openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url)
 });
 
 contextBridge.exposeInMainWorld('configAPI', {
