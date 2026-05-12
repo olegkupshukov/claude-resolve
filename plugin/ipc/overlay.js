@@ -4,6 +4,11 @@ const os = require('os');
 const { spawn, execSync } = require('child_process');
 const { getResolve, getCurrentProject } = require('./resolve');
 const { readConfig } = require('./config');
+const {
+    TEMPLATE_DIR, RENDER_DIR,
+    PYTHON_CANDIDATES, PYTHON_VERIFY_CMD,
+    FFMPEG_CANDIDATES, FFMPEG_VERIFY_CMD
+} = require('./paths');
 
 // Resolve executable paths at load time — Resolve's Electron may have a stripped PATH
 function findExecutable(candidates, verifyCmd) {
@@ -19,32 +24,10 @@ function findExecutable(candidates, verifyCmd) {
     return candidates[0]; // last resort
 }
 
-const PYTHON_PATH = findExecutable([
-    path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WindowsApps', 'python.exe'),
-    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python314', 'python.exe'),
-    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python313', 'python.exe'),
-    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python312', 'python.exe'),
-    'python'
-], 'python -c "import sys; print(sys.executable)"');
-
-const FFMPEG_PATH = findExecutable([
-    path.join(process.env.PROGRAMFILES || '', 'FFmpeg', 'ffmpeg.exe'),
-    path.join(process.env.PROGRAMFILES || '', 'FFmpeg', 'bin', 'ffmpeg.exe'),
-    'ffmpeg'
-], 'where ffmpeg');
+const PYTHON_PATH = findExecutable(PYTHON_CANDIDATES, PYTHON_VERIFY_CMD);
+const FFMPEG_PATH = findExecutable(FFMPEG_CANDIDATES, FFMPEG_VERIFY_CMD);
 
 console.log('RESOLVED: python=' + PYTHON_PATH, 'ffmpeg=' + FFMPEG_PATH);
-
-const TEMPLATE_DIR = path.join(
-    process.env.APPDATA,
-    'Blackmagic Design', 'DaVinci Resolve', 'Support',
-    'Fusion', 'Templates', 'Edit', 'Titles', 'HTML Titles', 'ClaudeResolve'
-);
-
-const RENDER_DIR = path.join(
-    process.env.APPDATA,
-    'Blackmagic Design', 'DaVinci Resolve', 'Claude Resolve', 'renders'
-);
 
 function renderFilename(name) {
     const safe = (name || 'Overlay').replace(/[^a-zA-Z0-9_-]/g, '_');

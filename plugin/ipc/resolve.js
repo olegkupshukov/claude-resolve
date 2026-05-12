@@ -1,4 +1,6 @@
-const WorkflowIntegration = require('../WorkflowIntegration.node');
+const WorkflowIntegration = process.platform === 'darwin'
+    ? require('../WorkflowIntegration.darwin.node')
+    : require('../WorkflowIntegration.node');
 
 const PLUGIN_ID = 'com.clauderesolve.plugin';
 

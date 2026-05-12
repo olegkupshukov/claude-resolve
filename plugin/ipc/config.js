@@ -1,10 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const { CONFIG_DIR } = require('./paths');
 
-const CONFIG_DIR = path.join(
-    process.env.APPDATA,
-    'Blackmagic Design', 'DaVinci Resolve', 'Claude Resolve'
-);
 const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
 const DEFAULTS = { mode: 'mov', model: 'sonnet', fps: 25, width: 1920, height: 1080 };
 

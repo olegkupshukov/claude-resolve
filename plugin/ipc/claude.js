@@ -2,8 +2,7 @@ const { spawn, exec, execSync } = require('child_process');
 const path = require('path');
 const { handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline } = require('./resolve');
 const { readConfig } = require('./config');
-
-const CLAUDE_PATH = path.join(process.env.APPDATA, 'npm', 'claude.cmd');
+const { CLAUDE_PATH, OGRAF_DEV_PATH, isMac } = require('./paths');
 
 const MODEL_IDS = {
     sonnet: 'claude-sonnet-4-20250514',
@@ -173,7 +172,7 @@ Schema property types: string, string with gddType "color-rrggbb", number (min/m
 
 Critical: goToTime receives {timestamp: ms} — use _setFrame(timestamp/1000). DETERMINISTIC: same timestamp = identical output. NO setTimeout/setInterval/rAF. NO CSS transitions/animations — direct style assignments only. will-change on animated elements. .toFixed(1) for sub-pixel values.
 
-For full OGraf spec: C:\\ProgramData\\Blackmagic Design\\DaVinci Resolve\\Support\\Developer\\OGraf HTML Templates\\
+For full OGraf spec: ${OGRAF_DEV_PATH}
 
 ${ANIMATION_PRINCIPLES}`;
 }
@@ -250,9 +249,15 @@ function handleCheckAuth() {
 }
 
 function handleOpenLoginTerminal() {
-    spawn('cmd', ['/c', 'start', 'cmd', '/k', CLAUDE_PATH + ' login'], {
-        detached: true, shell: false, stdio: 'ignore'
-    });
+    if (isMac) {
+        spawn('osascript', ['-e', `tell application "Terminal" to do script "${CLAUDE_PATH} login"`], {
+            detached: true, stdio: 'ignore'
+        });
+    } else {
+        spawn('cmd', ['/c', 'start', 'cmd', '/k', CLAUDE_PATH + ' login'], {
+            detached: true, shell: false, stdio: 'ignore'
+        });
+    }
 }
 
 async function handleStart() {
