@@ -17,7 +17,7 @@ Claude Resolve is a Workflow Integration Plugin that brings AI-powered motion gr
 - **Claude Code CLI** with an active Pro or Max subscription
 - **Python 3.10+** with Playwright installed
 - **ffmpeg** in PATH
-- **Windows** (macOS support planned)
+- **Windows** or **macOS**
 
 ## Installation
 
@@ -39,11 +39,20 @@ Claude Resolve is a Workflow Integration Plugin that brings AI-powered motion gr
 
 4. Make sure ffmpeg is in your PATH.
 
-5. Clone the repo and run the install script as administrator:
+5. Clone the repo and run the install script:
+
+   **Windows** (run as Administrator):
    ```
    git clone https://github.com/olegkupshukov/claude-resolve.git
    cd claude-resolve
    install.bat
+   ```
+
+   **macOS**:
+   ```
+   git clone https://github.com/olegkupshukov/claude-resolve.git
+   cd claude-resolve
+   sudo bash install.sh
    ```
 
 6. Restart DaVinci Resolve. Open the plugin from **Workspace > Workflow Integration > Claude Resolve**.
@@ -85,7 +94,7 @@ Open the sidebar (gear icon) to configure:
 - Complex prompts may be slow on Sonnet — switch to Opus for better results on detailed animations
 - OGraf templates require a Resolve restart to appear in the Effects Library
 - OGraf templates use CPU rendering on Windows (may cause brief flickering during preview)
-- Windows only for now
+- macOS support is new and not yet tested on a real Mac with Resolve — please report issues
 - The plugin spawns Claude Code CLI as a subprocess — first response may take a few seconds to warm up
 
 ## Links
