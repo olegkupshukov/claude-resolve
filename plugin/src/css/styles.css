@@ -271,6 +271,17 @@ body, #root {
     background: #000;
 }
 
+.preview-placeholder {
+    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-user-bubble);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
 .preview-frame-native {
     border: none;
     display: block;

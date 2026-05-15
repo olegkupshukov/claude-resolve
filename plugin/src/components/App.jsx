@@ -6,12 +6,16 @@ import Sidebar from './Sidebar';
 import WelcomeScreen from './WelcomeScreen';
 
 function tryParseStandardHTML(text) {
-    const htmlMatch = text.match(/```html\s*\n(?:\/\/ FILE:\s*(\S+\.html)\s*\n)?([\s\S]*?)```/);
+    const htmlMatch = text.match(/```html\s*\n(?:(?:\/\/|<!--)\s*FILE:\s*(\S+\.html)(?:\s*-->)?\s*\n)?([\s\S]*?)```/);
     if (!htmlMatch) return null;
     const html = htmlMatch[2].trim();
-    if (!html.includes('renderFrame') || !html.includes('getAnimationDuration')) return null;
+    if (!html.includes('getAnimationDuration')) return null;
+    const hasFrame = html.includes('renderFrame');
+    const hasReact = html.includes('ReactDOM.createRoot');
+    if (!hasFrame && !hasReact) return null;
+    const mode = hasFrame ? 'frame' : 'realtime';
     const name = htmlMatch[1]?.replace('.html', '') || 'Overlay';
-    return { type: 'html', name, html };
+    return { type: 'html', name, html, mode };
 }
 
 export default function App() {

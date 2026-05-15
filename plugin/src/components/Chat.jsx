@@ -63,7 +63,9 @@ function MessageBubble({ message, activeTool, tokenCount, model }) {
                     ? <>
                         <div className="template-card-header">
                             <span className="template-card-name">{parsed.name}</span>
-                            <span className="template-card-label">HTML animation</span>
+                            <span className="template-card-label">
+                                {parsed.mode === 'realtime' ? 'Realtime' : 'Frame'} · HTML animation
+                            </span>
                         </div>
                         <Preview parsed={parsed} />
                         <RenderMovAction parsed={parsed} />

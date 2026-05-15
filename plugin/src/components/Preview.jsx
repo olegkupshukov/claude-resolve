@@ -67,6 +67,17 @@ requestAnimationFrame(tick);
     );
 });
 
+function RealtimePlaceholder() {
+    return (
+        <div className="preview-wrapper">
+            <div className="preview-placeholder">
+                Preview unavailable — Spring/React mode
+            </div>
+        </div>
+    );
+}
+
 export default function Preview({ parsed }) {
+    if (parsed.mode === 'realtime') return <RealtimePlaceholder />;
     return <HTMLPreview parsed={parsed} />;
 }
