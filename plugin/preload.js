@@ -58,3 +58,7 @@ contextBridge.exposeInMainWorld('configAPI', {
 contextBridge.exposeInMainWorld('updatesAPI', {
     check: (opts) => ipcRenderer.invoke('app:checkUpdate', opts)
 });
+
+contextBridge.exposeInMainWorld('previewAPI', {
+    getRealtimeBundle: () => ipcRenderer.invoke('preview:getRealtimeBundle')
+});

@@ -1,25 +1,32 @@
 import React, { useRef, useState, useEffect, useMemo, memo } from 'react';
 
-const HTMLPreview = memo(function HTMLPreview({ parsed }) {
-    const iframeRef = useRef(null);
-    const containerRef = useRef(null);
-    const [scale, setScale] = useState(1);
-    const [isPlaying, setIsPlaying] = useState(true);
+// Module-level singleton: fetched once per session, shared across all Preview
+// instances. The bundle is ~1.2 MB (UMDs + base64 fonts), no point re-fetching.
+let cachedBundle = null;
+let pendingBundle = null;
+function loadBundle() {
+    if (cachedBundle) return Promise.resolve(cachedBundle);
+    if (!pendingBundle) {
+        pendingBundle = window.previewAPI.getRealtimeBundle()
+            .then(b => { cachedBundle = b; return b; })
+            .catch(() => { pendingBundle = null; return { umd: '', fonts: '' }; });
+    }
+    return pendingBundle;
+}
 
-    useEffect(() => {
-        function updateScale() {
-            if (containerRef.current) {
-                setScale(containerRef.current.clientWidth / 1920);
-            }
-        }
-        updateScale();
-        const obs = new ResizeObserver(updateScale);
-        if (containerRef.current) obs.observe(containerRef.current);
-        return () => obs.disconnect();
-    }, []);
+function injectIntoHead(html, content) {
+    if (html.includes('<head>')) return html.replace('<head>', '<head>' + content);
+    if (html.includes('<html>')) return html.replace('<html>', '<html><head>' + content + '</head>');
+    return '<head>' + content + '</head>' + html;
+}
 
-    const srcdoc = useMemo(() => {
-        const playScript = `<script>
+function injectBeforeBodyClose(html, content) {
+    if (html.includes('</body>')) return html.replace('</body>', content + '</body>');
+    if (html.includes('</html>')) return html.replace('</html>', content + '</html>');
+    return html + content;
+}
+
+const FRAME_PLAY_SCRIPT = `<script>
 document.addEventListener('DOMContentLoaded',function(){
 if(typeof window.getAnimationDuration!=='function'||typeof window.renderFrame!=='function')return;
 var fps=25,dur=window.getAnimationDuration(),total=Math.ceil(dur*fps);
@@ -35,11 +42,46 @@ window.addEventListener('message',function(e){if(e.data==='play')running=true;el
 requestAnimationFrame(tick);
 });
 <\/script>`;
-        const html = parsed.html;
-        if (html.includes('</body>')) return html.replace('</body>', playScript + '</body>');
-        if (html.includes('</html>')) return html.replace('</html>', playScript + '</html>');
-        return html + playScript;
-    }, [parsed]);
+
+const HTMLPreview = memo(function HTMLPreview({ parsed }) {
+    const iframeRef = useRef(null);
+    const containerRef = useRef(null);
+    const [scale, setScale] = useState(1);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [bundle, setBundle] = useState(cachedBundle);
+
+    useEffect(() => {
+        if (!bundle) loadBundle().then(setBundle);
+    }, [bundle]);
+
+    useEffect(() => {
+        function updateScale() {
+            if (containerRef.current) {
+                setScale(containerRef.current.clientWidth / 1920);
+            }
+        }
+        updateScale();
+        const obs = new ResizeObserver(updateScale);
+        if (containerRef.current) obs.observe(containerRef.current);
+        return () => obs.disconnect();
+    }, []);
+
+    const srcdoc = useMemo(() => {
+        if (!bundle) return '<!DOCTYPE html><html><body style="margin:0;background:#000"></body></html>';
+
+        let html = parsed.html;
+        const headInjections = [];
+        headInjections.push(bundle.fonts);
+        if (parsed.mode === 'realtime') {
+            headInjections.push(`<script>${bundle.umd}</script>`);
+        }
+        html = injectIntoHead(html, headInjections.join(''));
+
+        if (parsed.mode !== 'realtime') {
+            html = injectBeforeBodyClose(html, FRAME_PLAY_SCRIPT);
+        }
+        return html;
+    }, [parsed, bundle]);
 
     function togglePlay() {
         const next = !isPlaying;
@@ -60,24 +102,15 @@ requestAnimationFrame(tick);
                     style={{ transform: `scale(${scale})` }}
                 />
             </div>
-            <button className="btn-icon btn-play" onClick={togglePlay}>
-                {isPlaying ? '⏸' : '▶'}
-            </button>
+            {parsed.mode !== 'realtime' && (
+                <button className="btn-icon btn-play" onClick={togglePlay}>
+                    {isPlaying ? '⏸' : '▶'}
+                </button>
+            )}
         </div>
     );
 });
 
-function RealtimePlaceholder() {
-    return (
-        <div className="preview-wrapper">
-            <div className="preview-placeholder">
-                Preview unavailable — Spring/React mode
-            </div>
-        </div>
-    );
-}
-
 export default function Preview({ parsed }) {
-    if (parsed.mode === 'realtime') return <RealtimePlaceholder />;
     return <HTMLPreview parsed={parsed} />;
 }
