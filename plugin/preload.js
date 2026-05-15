@@ -56,5 +56,5 @@ contextBridge.exposeInMainWorld('configAPI', {
 });
 
 contextBridge.exposeInMainWorld('updatesAPI', {
-    check: () => ipcRenderer.invoke('app:checkUpdate')
+    check: (opts) => ipcRenderer.invoke('app:checkUpdate', opts)
 });

@@ -547,10 +547,31 @@ body, #root {
     cursor: default;
 }
 
-.sidebar-setting-actions {
-    display: flex;
-    align-items: center;
+.sidebar-setting-stack {
+    flex-direction: column;
+    align-items: stretch;
     gap: var(--gap-xs);
+}
+
+.sidebar-setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--gap-sm);
+    min-width: 0;
+}
+
+.sidebar-setting-row > span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-setting-check {
+    align-self: flex-start;
+    padding: 0;
+    text-align: left;
+    white-space: nowrap;
 }
 
 .update-status {
@@ -591,14 +612,6 @@ body, #root {
     font-style: italic;
     opacity: 1;
     transition: opacity var(--duration-normal) var(--ease-out);
-}
-
-.message-cost {
-    display: block;
-    margin-top: var(--gap-xs);
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-    opacity: 0.7;
 }
 
 /* Welcome screen */

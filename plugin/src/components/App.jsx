@@ -25,7 +25,6 @@ export default function App() {
     const [tokenCount, setTokenCount] = useState(0);
     const [updateAvailable, setUpdateAvailable] = useState(false);
     const nextId = useRef(0);
-    const pendingCost = useRef(null);
 
     useEffect(() => {
         function appendToLast(data) {
@@ -55,8 +54,6 @@ export default function App() {
                 setActiveTool({ name: data.name, file: data.file });
             } else if (data.type === 'tokens') {
                 setTokenCount(data.output);
-            } else if (data.type === 'result') {
-                pendingCost.current = data.cost;
             }
         });
 
@@ -74,11 +71,9 @@ export default function App() {
                 }
                 if (code === 1) msg.isError = true;
                 if (code === 0) msg.parsed = tryParseStandardHTML(msg.text);
-                msg.cost = pendingCost.current;
                 updated[updated.length - 1] = msg;
                 return updated;
             });
-            pendingCost.current = null;
             setActiveTool(null);
             setIsProcessing(false);
         });

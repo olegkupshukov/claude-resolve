@@ -73,9 +73,6 @@ function MessageBubble({ message, activeTool, tokenCount, model }) {
                         </details>
                     </>
                     : message.text}
-            {message.cost != null && (
-                <span className="message-cost">${message.cost.toFixed(4)}</span>
-            )}
         </div>
     );
 }

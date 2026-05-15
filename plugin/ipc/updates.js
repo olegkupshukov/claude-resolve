@@ -52,9 +52,10 @@ function fetchLatestRelease() {
     });
 }
 
-async function handleCheckUpdate() {
+async function handleCheckUpdate(_event, opts) {
+    const force = !!(opts && opts.force);
     const now = Date.now();
-    if (cached && (now - cached.at) < CACHE_TTL_MS) return cached.result;
+    if (!force && cached && (now - cached.at) < CACHE_TTL_MS) return cached.result;
 
     try {
         const { tag, url } = await fetchLatestRelease();

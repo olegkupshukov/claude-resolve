@@ -2,31 +2,37 @@ import React, { useState, useEffect } from 'react';
 
 export default function SidebarSettings({ config, onConfigChange }) {
     const [update, setUpdate] = useState(null);
-    const [checking, setChecking] = useState(true);
+    const [checking, setChecking] = useState(false);
 
-    useEffect(() => {
-        window.updatesAPI.check()
-            .then(setUpdate)
-            .catch(() => setUpdate({ error: 'offline' }))
-            .finally(() => setChecking(false));
-    }, []);
+    useEffect(() => { runCheck(false); }, []);
 
-    function handleCheck() {
+    async function runCheck(force) {
+        if (!window.updatesAPI) {
+            setUpdate({ error: 'unavailable' });
+            return;
+        }
         setChecking(true);
-        window.updatesAPI.check()
-            .then(setUpdate)
-            .catch(() => setUpdate({ error: 'offline' }))
-            .finally(() => setChecking(false));
+        const minDelay = new Promise(r => setTimeout(r, 400));
+        try {
+            const [result] = await Promise.all([
+                window.updatesAPI.check(force ? { force: true } : undefined),
+                minDelay
+            ]);
+            setUpdate(result);
+        } catch {
+            setUpdate({ error: 'offline' });
+        }
+        setChecking(false);
     }
 
-    function renderUpdateStatus() {
+    function renderStatus() {
         if (checking) return <span className="update-status">Checking…</span>;
         if (!update) return null;
         if (update.error) return <span className="update-status update-status-error">Check failed</span>;
         if (update.hasUpdate) {
             return (
                 <button
-                    className="btn-text update-status update-status-available"
+                    className="update-status update-status-available"
                     onClick={() => window.windowAPI.openExternal(update.downloadUrl)}
                 >
                     Update available: v{String(update.latest).replace(/^v/, '')}
@@ -35,6 +41,8 @@ export default function SidebarSettings({ config, onConfigChange }) {
         }
         return <span className="update-status">Up to date</span>;
     }
+
+    const versionText = update?.current ? `v${update.current}` : '';
 
     return (
         <div className="sidebar-section">
@@ -68,14 +76,18 @@ export default function SidebarSettings({ config, onConfigChange }) {
                     <option value="3840x2160">3840x2160</option>
                 </select>
             </div>
-            <div className="sidebar-setting">
-                <span>Version {update?.current ? `v${update.current}` : ''}</span>
-                <span className="sidebar-setting-actions">
-                    {renderUpdateStatus()}
-                    <button className="btn-text" onClick={handleCheck} disabled={checking}>
-                        Check for Updates
-                    </button>
-                </span>
+            <div className="sidebar-setting sidebar-setting-stack">
+                <div className="sidebar-setting-row">
+                    <span>Version {versionText}</span>
+                    {renderStatus()}
+                </div>
+                <button
+                    className="btn-text sidebar-setting-check"
+                    onClick={() => runCheck(true)}
+                    disabled={checking}
+                >
+                    Check for Updates
+                </button>
             </div>
         </div>
     );
