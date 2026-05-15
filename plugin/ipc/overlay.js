@@ -132,6 +132,11 @@ async function handleRenderMov(_event, { html, name, fps, width, height }) {
 
     console.log('RENDER: python=' + PYTHON_PATH, 'script=' + renderScript, 'html=' + htmlPath, 'out=' + movPath);
 
+    const cleanupTempDir = () => {
+        try { fs.rmSync(tempDir, { recursive: true, force: true }); }
+        catch (e) { console.log('RENDER TEMP CLEANUP FAILED:', e.message); }
+    };
+
     return new Promise((resolve) => {
         const proc = spawn(PYTHON_PATH, [
             renderScript, htmlPath,
@@ -165,6 +170,7 @@ async function handleRenderMov(_event, { html, name, fps, width, height }) {
 
         proc.on('close', async (code) => {
             console.log('RENDER EXIT:', code, stderrBuf.slice(0, 500));
+            cleanupTempDir();
             if (code !== 0) {
                 const errMsg = stderrBuf.trim().split('\n').pop() || 'Render process exited with code ' + code;
                 resolve({ success: false, error: errMsg });
@@ -180,6 +186,7 @@ async function handleRenderMov(_event, { html, name, fps, width, height }) {
 
         proc.on('error', (err) => {
             console.log('RENDER SPAWN ERROR:', err.message);
+            cleanupTempDir();
             resolve({ success: false, error: 'Failed to spawn: ' + err.message });
         });
     });
