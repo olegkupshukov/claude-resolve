@@ -2,29 +2,6 @@ import React, { useRef, useEffect, useState } from 'react';
 import Preview from './Preview';
 import StatusIndicator from './StatusIndicator';
 
-function OGrafActions({ parsed }) {
-    const [status, setStatus] = useState(null);
-
-    async function handleInstall() {
-        setStatus('installing');
-        try {
-            await window.overlayAPI.save(parsed);
-            setStatus('done');
-        } catch {
-            setStatus('error');
-        }
-    }
-
-    if (status === null) return <button className="btn btn-install" onClick={handleInstall}>Install</button>;
-    if (status === 'installing') return <button className="btn btn-install" disabled>Installing...</button>;
-    if (status === 'done') return (
-        <button className="btn btn-install" disabled>
-            Installed &#10003; &mdash; Restart Resolve to find it in Effects Library &gt; Titles &gt; HTML Titles &gt; ClaudeResolve
-        </button>
-    );
-    return <button className="btn btn-install error" disabled>Install Failed</button>;
-}
-
 function RenderMovAction({ parsed }) {
     const [status, setStatus] = useState(null);
     const [progress, setProgress] = useState(0);
@@ -77,8 +54,6 @@ function MessageBubble({ message, activeTool, tokenCount, model }) {
     if (message.isError) className += ' error';
 
     const parsed = message.parsed;
-    const cardName = parsed?.type === 'ograf' ? parsed.templateName : parsed?.name;
-    const cardLabel = parsed?.type === 'ograf' ? 'OGraf template' : 'HTML animation';
 
     return (
         <div className={className}>
@@ -87,13 +62,11 @@ function MessageBubble({ message, activeTool, tokenCount, model }) {
                 : parsed
                     ? <>
                         <div className="template-card-header">
-                            <span className="template-card-name">{cardName}</span>
-                            <span className="template-card-label">{cardLabel}</span>
+                            <span className="template-card-name">{parsed.name}</span>
+                            <span className="template-card-label">HTML animation</span>
                         </div>
                         <Preview parsed={parsed} />
-                        {parsed.type === 'ograf'
-                            ? <OGrafActions parsed={parsed} />
-                            : <RenderMovAction parsed={parsed} />}
+                        <RenderMovAction parsed={parsed} />
                         <details className="code-toggle">
                             <summary>Show code</summary>
                             <pre className="code-block">{message.text}</pre>

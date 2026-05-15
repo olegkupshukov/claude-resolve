@@ -197,7 +197,7 @@ body, #root {
     transition: width var(--duration-normal) var(--ease-out);
 }
 
-/* OGraf template card */
+/* Animation card */
 
 .template-card-header {
     display: flex;
@@ -245,7 +245,7 @@ body, #root {
     overflow-y: auto;
 }
 
-/* OGraf preview card */
+/* Preview card */
 
 .preview-wrapper {
     margin-top: var(--gap-sm);
@@ -359,6 +359,7 @@ body, #root {
 /* Gear button */
 
 .btn-gear {
+    position: relative;
     background: var(--color-accent);
     color: var(--color-on-accent);
     border: none;
@@ -369,6 +370,18 @@ body, #root {
     line-height: 1;
     transition: background var(--duration-normal) var(--ease-out),
                 box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.btn-gear-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--color-error);
+    box-shadow: 0 0 0 2px var(--color-accent);
+    pointer-events: none;
 }
 
 .btn-gear-active {
@@ -451,63 +464,6 @@ body, #root {
     outline: none;
 }
 
-/* Mode cards (welcome screen) */
-
-.mode-cards {
-    display: flex;
-    gap: var(--gap-sm);
-    margin: var(--gap-md) 0;
-}
-
-.mode-card {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--gap-xs);
-    padding: var(--gap-md);
-    background: var(--color-panel);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    color: var(--color-text);
-    cursor: pointer;
-    transition: transform var(--duration-normal) var(--ease-out),
-                border-color var(--duration-normal) ease;
-}
-
-.mode-card-active {
-    border-color: var(--color-accent);
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .mode-card:hover {
-        transform: scale(1.02);
-        border-color: var(--color-text-muted);
-    }
-    .mode-card-active:hover {
-        border-color: var(--color-accent);
-    }
-}
-
-.mode-card:active {
-    transform: scale(0.97);
-}
-
-.mode-card-icon {
-    font-size: 24px;
-}
-
-.mode-card-title {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-}
-
-.mode-card-subtitle {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-    text-align: center;
-}
-
 /* Shared asset row styles */
 
 .panel-header-actions {
@@ -584,6 +540,41 @@ body, #root {
     padding: var(--gap-xs);
     font-size: var(--font-size-sm);
     transition: color var(--duration-fast) ease;
+}
+
+.btn-text:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.sidebar-setting-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-xs);
+}
+
+.update-status {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.update-status-error {
+    color: var(--color-error);
+}
+
+.update-status-available {
+    color: var(--color-accent);
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: var(--font-size-xs);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .update-status-available:hover {
+        text-decoration: underline;
+    }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -780,8 +771,5 @@ body, #root {
     }
     .btn-gear {
         transition: none;
-    }
-    .mode-card {
-        transition: border-color var(--duration-normal) ease;
     }
 }

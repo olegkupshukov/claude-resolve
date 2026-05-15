@@ -1,6 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function SidebarSettings({ config, onConfigChange }) {
+    const [update, setUpdate] = useState(null);
+    const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+        window.updatesAPI.check()
+            .then(setUpdate)
+            .catch(() => setUpdate({ error: 'offline' }))
+            .finally(() => setChecking(false));
+    }, []);
+
+    function handleCheck() {
+        setChecking(true);
+        window.updatesAPI.check()
+            .then(setUpdate)
+            .catch(() => setUpdate({ error: 'offline' }))
+            .finally(() => setChecking(false));
+    }
+
+    function renderUpdateStatus() {
+        if (checking) return <span className="update-status">Checking…</span>;
+        if (!update) return null;
+        if (update.error) return <span className="update-status update-status-error">Check failed</span>;
+        if (update.hasUpdate) {
+            return (
+                <button
+                    className="btn-text update-status update-status-available"
+                    onClick={() => window.windowAPI.openExternal(update.downloadUrl)}
+                >
+                    Update available: v{String(update.latest).replace(/^v/, '')}
+                </button>
+            );
+        }
+        return <span className="update-status">Up to date</span>;
+    }
+
     return (
         <div className="sidebar-section">
             <label className="sidebar-label">Settings</label>
@@ -32,6 +67,15 @@ export default function SidebarSettings({ config, onConfigChange }) {
                     <option value="1920x1080">1920x1080</option>
                     <option value="3840x2160">3840x2160</option>
                 </select>
+            </div>
+            <div className="sidebar-setting">
+                <span>Version {update?.current ? `v${update.current}` : ''}</span>
+                <span className="sidebar-setting-actions">
+                    {renderUpdateStatus()}
+                    <button className="btn-text" onClick={handleCheck} disabled={checking}>
+                        Check for Updates
+                    </button>
+                </span>
             </div>
         </div>
     );

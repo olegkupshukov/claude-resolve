@@ -18,22 +18,11 @@ const CLAUDE_PATH = isMac
     ? 'claude'
     : path.join(process.env.APPDATA || '', 'npm', 'claude.cmd');
 
-// Resolve template install directory (OGraf / HTML Titles)
-const TEMPLATE_DIR = path.join(
-    RESOLVE_DATA, 'Support',
-    'Fusion', 'Templates', 'Edit', 'Titles', 'HTML Titles', 'ClaudeResolve'
-);
-
 // Rendered .mov output directory
 const RENDER_DIR = path.join(RESOLVE_DATA, 'Claude Resolve', 'renders');
 
 // Plugin config directory
 const CONFIG_DIR = path.join(RESOLVE_DATA, 'Claude Resolve');
-
-// OGraf developer docs path (used in system prompt)
-const OGRAF_DEV_PATH = isMac
-    ? '/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/OGraf HTML Templates/'
-    : 'C:\\ProgramData\\Blackmagic Design\\DaVinci Resolve\\Support\\Developer\\OGraf HTML Templates\\';
 
 // Python executable candidates
 const PYTHON_CANDIDATES = isMac
@@ -73,10 +62,8 @@ const FFMPEG_VERIFY_CMD = isMac ? 'which ffmpeg' : 'where ffmpeg';
 module.exports = {
     isMac,
     CLAUDE_PATH,
-    TEMPLATE_DIR,
     RENDER_DIR,
     CONFIG_DIR,
-    OGRAF_DEV_PATH,
     PYTHON_CANDIDATES,
     PYTHON_VERIFY_CMD,
     FFMPEG_CANDIDATES,

@@ -3,7 +3,7 @@
 **AI Motion Graphics Generator for DaVinci Resolve Studio**
 *by Oleg Kupshukov*
 
-Claude Resolve is a Workflow Integration Plugin that brings AI-powered motion graphics generation directly into DaVinci Resolve Studio. Describe what you want in plain text, and Claude generates the animation code, renders it to ProRes 4444 with alpha transparency, and imports it to your timeline. Supports two modes: one-off .mov renders and reusable OGraf templates with Inspector parameters.
+Claude Resolve is a Workflow Integration Plugin that brings AI-powered motion graphics generation directly into DaVinci Resolve Studio. Describe what you want in plain text, and Claude generates the animation code, renders it to ProRes 4444 with alpha transparency, and imports it to your timeline.
 
 ![Welcome Screen](screenshots/welcome_screen.png)
 
@@ -60,40 +60,28 @@ Claude Resolve is a Workflow Integration Plugin that brings AI-powered motion gr
 ## Usage
 
 1. Open the plugin in DaVinci Resolve
-2. Select a mode: **Animation (.mov)** or **Template (OGraf)**
-3. Type a prompt describing the motion graphic you want
-4. Preview the result in the built-in player
-5. Click **Render .mov** or **Install** to use it in your project
+2. Type a prompt describing the motion graphic you want
+3. Preview the result in the built-in player
+4. Click **Render .mov** to render it and import it to your timeline
 
-## Two Modes
+## How it works
 
-### Animation (.mov)
+Generates one-off HTML animations rendered frame-by-frame to ProRes 4444 .mov with alpha transparency via Playwright + ffmpeg. Full creative freedom: CSS animations, SVG, Canvas, filters, blur, backdrop-filter. The rendered .mov is automatically imported to your current timeline on an empty track at the playhead position.
 
-Generates one-off HTML animations rendered frame-by-frame to ProRes 4444 .mov with alpha transparency via Playwright + ffmpeg. Full creative freedom: CSS animations, SVG, Canvas, filters, blur, backdrop-filter. The rendered .mov is automatically imported to your current timeline.
-
-**Use when:** you need a specific animation for this project — title cards, text reveals, glitch effects, lower thirds, transitions.
-
-### Template (OGraf)
-
-Generates reusable OGraf Web Component templates that appear in Resolve's Effects Library under **Titles > HTML Titles > ClaudeResolve**. Templates expose parameters in the Inspector panel (text, colors, sizes, timing) so you can customize them without code.
-
-**Use when:** you want reusable overlays you'll apply across multiple projects — branded lower thirds, countdown timers, social media overlays.
+**Use it for:** title cards, text reveals, glitch effects, lower thirds, transitions — any specific animation for the project at hand.
 
 ## Settings
 
 Open the sidebar (gear icon) to configure:
 
 - **Model**: Sonnet (fast) or Opus (smart)
-- **Mode**: Switch between .mov and OGraf (restarts Claude session)
 - **FPS**: 24, 25, 30, or 60
 - **Resolution**: 1920x1080 or 3840x2160
-- **Assets**: Manage installed templates and rendered .mov files
+- **Assets**: Manage rendered .mov files (sync to Media Pool, delete)
 
 ## Known Limitations
 
 - Complex prompts may be slow on Sonnet — switch to Opus for better results on detailed animations
-- OGraf templates require a Resolve restart to appear in the Effects Library
-- OGraf templates use CPU rendering on Windows (may cause brief flickering during preview)
 - macOS support is new and not yet tested on a real Mac with Resolve — please report issues
 - The plugin spawns Claude Code CLI as a subprocess — first response may take a few seconds to warm up
 

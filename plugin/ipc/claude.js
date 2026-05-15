@@ -2,7 +2,7 @@ const { spawn, exec, execSync } = require('child_process');
 const path = require('path');
 const { handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline } = require('./resolve');
 const { readConfig } = require('./config');
-const { CLAUDE_PATH, OGRAF_DEV_PATH, isMac } = require('./paths');
+const { CLAUDE_PATH, isMac } = require('./paths');
 
 const MODEL_IDS = {
     sonnet: 'claude-sonnet-4-20250514',
@@ -132,7 +132,7 @@ const ANIMATION_PRINCIPLES = `## Animation Principles
 - Phase durations 150-300ms, stagger 50-100ms between elements
 - Animate transform + opacity together. Use translate/scale/rotate, NOT top/left/width/height`;
 
-function buildMovPrompt(projectName, currentPage, timelineName, config) {
+function buildSystemPrompt(projectName, currentPage, timelineName, config) {
     return `You are Claude Resolve — an AI assistant inside DaVinci Resolve Studio (Workflow Integration Plugin).
 
 Current session: Project: ${projectName || 'Unknown'} | Page: ${currentPage || 'Unknown'} | Timeline: ${timelineName || 'None'}
@@ -153,30 +153,6 @@ Full creative freedom: CSS transitions, blur, filters, backdrop-filter, SVG, Can
 ${ANIMATION_PRINCIPLES}`;
 }
 
-function buildOGrafPrompt(projectName, currentPage, timelineName) {
-    return `You are Claude Resolve — an AI assistant inside DaVinci Resolve Studio (Workflow Integration Plugin).
-
-Current session: Project: ${projectName || 'Unknown'} | Page: ${currentPage || 'Unknown'} | Timeline: ${timelineName || 'None'}
-
-Keep responses concise — compact plugin window.
-
-## Your Task
-
-You generate OGraf Web Component Templates — reusable overlays with Inspector parameters for DaVinci Resolve.
-
-Output EXACTLY two code blocks: \`\`\`json with // FILE: Name.ograf.json, then \`\`\`javascript with // FILE: Name.js.
-
-Web Component must implement: load, dispose, playAction, stopAction, updateAction, customAction, goToTime, setActionsSchedule, connectedCallback. Use Shadow DOM, export default, NO customElements.define().
-
-Schema property types: string, string with gddType "color-rrggbb", number (min/max), integer (min/max), boolean. Max 20 properties.
-
-Critical: goToTime receives {timestamp: ms} — use _setFrame(timestamp/1000). DETERMINISTIC: same timestamp = identical output. NO setTimeout/setInterval/rAF. NO CSS transitions/animations — direct style assignments only. will-change on animated elements. .toFixed(1) for sub-pixel values.
-
-For full OGraf spec: ${OGRAF_DEV_PATH}
-
-${ANIMATION_PRINCIPLES}`;
-}
-
 async function sendContextMessage() {
     const [projectName, currentPage, timelineName] = await Promise.all([
         handleGetProjectName(),
@@ -185,9 +161,7 @@ async function sendContextMessage() {
     ]);
 
     const config = readConfig();
-    const context = config.mode === 'ograf'
-        ? buildOGrafPrompt(projectName, currentPage, timelineName)
-        : buildMovPrompt(projectName, currentPage, timelineName, config);
+    const context = buildSystemPrompt(projectName, currentPage, timelineName, config);
 
     isContextTurn = true;
     const msg = JSON.stringify({ type: 'user', message: { role: 'user', content: context } });

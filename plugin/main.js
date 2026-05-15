@@ -8,6 +8,7 @@ const { setupResolveHandlers } = require('./ipc/resolve');
 const { setupClaudeHandlers, cleanupClaude } = require('./ipc/claude');
 const { setupOverlayHandlers } = require('./ipc/overlay');
 const { setupConfigHandlers } = require('./ipc/config');
+const { setupUpdateHandlers } = require('./ipc/updates');
 
 let mainWindow = null;
 
@@ -36,6 +37,7 @@ app.whenReady().then(async () => {
     setupClaudeHandlers(ipcMain, mainWindow);
     setupOverlayHandlers(ipcMain, mainWindow);
     setupConfigHandlers(ipcMain);
+    setupUpdateHandlers(ipcMain);
     ipcMain.handle('window:resize', (_event, { width, height }) => {
         mainWindow.setSize(width, height);
     });

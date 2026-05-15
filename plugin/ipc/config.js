@@ -3,7 +3,7 @@ const path = require('path');
 const { CONFIG_DIR } = require('./paths');
 
 const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
-const DEFAULTS = { mode: 'mov', model: 'sonnet', fps: 25, width: 1920, height: 1080 };
+const DEFAULTS = { model: 'sonnet', fps: 25, width: 1920, height: 1080 };
 
 function readConfig() {
     try {

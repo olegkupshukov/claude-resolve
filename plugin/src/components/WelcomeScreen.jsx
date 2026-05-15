@@ -1,17 +1,12 @@
 import React from 'react';
 
-const MOV_CHIPS = [
+const CHIPS = [
     'Create a glitch title animation',
     'Make a cinematic text reveal',
     'Generate a subscribe button animation'
 ];
-const OGRAF_CHIPS = [
-    'Generate a lower third overlay',
-    'Create a title card template',
-    'Make a countdown timer'
-];
 
-export default function WelcomeScreen({ authState, onAuthStateChange, onStart, onPrompt, onDismiss, mode, onModeSwitch }) {
+export default function WelcomeScreen({ authState, onAuthStateChange, onStart, onPrompt, onDismiss }) {
     async function handleCheckAgain() {
         onAuthStateChange('checking');
         const result = await window.claudeAPI.checkAuth();
@@ -61,35 +56,14 @@ export default function WelcomeScreen({ authState, onAuthStateChange, onStart, o
         );
     }
 
-    const chips = mode === 'ograf' ? OGRAF_CHIPS : MOV_CHIPS;
-
     return (
         <div className="welcome-screen">
             <div className="welcome-content">
                 <h1 className="welcome-title">Claude Resolve</h1>
                 <p className="welcome-subtitle">AI Motion Graphics for DaVinci Resolve</p>
                 <p className="welcome-author">by Oleg Kupshukov</p>
-                <div className="mode-cards">
-                    <button
-                        className={`mode-card${mode === 'mov' ? ' mode-card-active' : ''}`}
-                        onClick={() => onModeSwitch('mov')}
-                    >
-                        <span className="mode-card-icon">&#127916;</span>
-                        <span className="mode-card-title">Animation (.mov)</span>
-                        <span className="mode-card-subtitle">Complex motion graphics, full CSS/JS freedom</span>
-                    </button>
-                    <button
-                        className={`mode-card${mode === 'ograf' ? ' mode-card-active' : ''}`}
-                        onClick={() => onModeSwitch('ograf')}
-                    >
-                        <span className="mode-card-icon">&#128208;</span>
-                        <span className="mode-card-title">Template (OGraf)</span>
-                        <span className="mode-card-subtitle">Reusable overlays with Inspector params</span>
-                    </button>
-                </div>
-                <hr className="welcome-separator" />
                 <div className="welcome-chips">
-                    {chips.map(text => (
+                    {CHIPS.map(text => (
                         <button key={text} className="welcome-chip" onClick={() => onPrompt(text)}>
                             {text}
                         </button>

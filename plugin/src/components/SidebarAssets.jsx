@@ -1,30 +1,15 @@
 import React, { useState, useEffect } from 'react';
 
 export default function SidebarAssets({ isOpen }) {
-    const [templates, setTemplates] = useState([]);
     const [renders, setRenders] = useState([]);
     const [syncStatus, setSyncStatus] = useState(null);
 
     useEffect(() => {
-        if (isOpen) { refreshTemplates(); refreshRenders(); }
+        if (isOpen) refreshRenders();
     }, [isOpen]);
-
-    async function refreshTemplates() {
-        setTemplates(await window.overlayAPI.listTemplates());
-    }
 
     async function refreshRenders() {
         setRenders(await window.overlayAPI.listRenders());
-    }
-
-    async function handleDeleteTemplate(folder) {
-        await window.overlayAPI.deleteTemplate(folder);
-        refreshTemplates();
-    }
-
-    async function handleDeleteAllTemplates() {
-        await window.overlayAPI.deleteAllTemplates();
-        refreshTemplates();
     }
 
     async function handleDeleteRender(name) {
@@ -41,7 +26,7 @@ export default function SidebarAssets({ isOpen }) {
         setSyncStatus('syncing');
         try {
             const result = await window.overlayAPI.syncToMediaPool();
-            setSyncStatus(result.synced > 0 ? `Synced ${result.synced}` : 'All synced \u2713');
+            setSyncStatus(result.synced > 0 ? `Synced ${result.synced}` : 'All synced ✓');
         } catch {
             setSyncStatus('Sync failed');
         }
@@ -51,25 +36,6 @@ export default function SidebarAssets({ isOpen }) {
     return (
         <div className="sidebar-section">
             <label className="sidebar-label">Assets</label>
-
-            <div className="sidebar-subsection">
-                <div className="sidebar-sub-header">
-                    <span>Templates</span>
-                    {templates.length > 0 && (
-                        <button className="btn-text" onClick={handleDeleteAllTemplates}>Delete All</button>
-                    )}
-                </div>
-                {templates.length === 0 ? (
-                    <div className="sidebar-empty">No templates</div>
-                ) : (
-                    templates.map(tpl => (
-                        <div className="template-row" key={tpl.folder}>
-                            <span className="template-name">{tpl.name}</span>
-                            <button className="btn-icon btn-delete" title="Delete" onClick={() => handleDeleteTemplate(tpl.folder)}>&#10005;</button>
-                        </div>
-                    ))
-                )}
-            </div>
 
             <div className="sidebar-subsection">
                 <div className="sidebar-sub-header">

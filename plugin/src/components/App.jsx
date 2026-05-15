@@ -5,19 +5,6 @@ import ChatInput from './ChatInput';
 import Sidebar from './Sidebar';
 import WelcomeScreen from './WelcomeScreen';
 
-function tryParseOGrafResponse(text) {
-    const jsonMatch = text.match(/```json\s*\n\/\/ FILE:\s*(\S+\.ograf\.json)\s*\n([\s\S]*?)```/);
-    const jsMatch = text.match(/```javascript\s*\n\/\/ FILE:\s*(\S+\.js)\s*\n([\s\S]*?)```/);
-    if (!jsonMatch || !jsMatch) return null;
-    const templateName = jsonMatch[1].replace('.ograf.json', '');
-    return {
-        type: 'ograf',
-        templateName,
-        manifestJSON: jsonMatch[2].trim(),
-        componentJS: jsMatch[2].trim()
-    };
-}
-
 function tryParseStandardHTML(text) {
     const htmlMatch = text.match(/```html\s*\n(?:\/\/ FILE:\s*(\S+\.html)\s*\n)?([\s\S]*?)```/);
     if (!htmlMatch) return null;
@@ -31,11 +18,12 @@ export default function App() {
     const [authState, setAuthState] = useState('checking');
     const [welcomed, setWelcomed] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [config, setConfig] = useState({ mode: 'mov', fps: 25, width: 1920, height: 1080 });
+    const [config, setConfig] = useState({ fps: 25, width: 1920, height: 1080 });
     const [messages, setMessages] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [activeTool, setActiveTool] = useState(null);
     const [tokenCount, setTokenCount] = useState(0);
+    const [updateAvailable, setUpdateAvailable] = useState(false);
     const nextId = useRef(0);
     const pendingCost = useRef(null);
 
@@ -85,7 +73,7 @@ export default function App() {
                     msg.text += '\n(Stopped)';
                 }
                 if (code === 1) msg.isError = true;
-                if (code === 0) msg.parsed = tryParseOGrafResponse(msg.text) || tryParseStandardHTML(msg.text);
+                if (code === 0) msg.parsed = tryParseStandardHTML(msg.text);
                 msg.cost = pendingCost.current;
                 updated[updated.length - 1] = msg;
                 return updated;
@@ -101,6 +89,10 @@ export default function App() {
         window.claudeAPI.checkAuth().then((result) => {
             setAuthState(result.status);
         });
+
+        window.updatesAPI.check()
+            .then(r => setUpdateAvailable(!!(r && r.hasUpdate)))
+            .catch(() => {});
 
         function handleUnload() {
             window.resolveAPI.cleanup();
@@ -140,18 +132,6 @@ export default function App() {
         }
     }
 
-    async function handleModeSwitch(newMode) {
-        if (newMode === config.mode) return;
-        const updated = await window.configAPI.set({ mode: newMode });
-        setConfig(updated);
-        if (!welcomed) {
-            setMessages([]);
-            setIsProcessing(false);
-            setActiveTool(null);
-            window.claudeAPI.restart();
-        }
-    }
-
     function handleToggleSidebar() {
         const next = !sidebarOpen;
         setSidebarOpen(next);
@@ -169,7 +149,6 @@ export default function App() {
                         isOpen={sidebarOpen}
                         config={config}
                         onConfigChange={handleConfigChange}
-                        onModeSwitch={handleModeSwitch}
                         onClose={handleToggleSidebar}
                     />
                 )}
@@ -181,8 +160,6 @@ export default function App() {
                             onStart={() => setAuthState('ready')}
                             onPrompt={handleSend}
                             onDismiss={() => setWelcomed(false)}
-                            mode={config.mode}
-                            onModeSwitch={handleModeSwitch}
                         />
                     ) : (
                         <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} model={config.model} />
@@ -195,6 +172,7 @@ export default function App() {
                 isProcessing={isProcessing}
                 sidebarOpen={sidebarOpen}
                 onToggleSidebar={handleToggleSidebar}
+                updateAvailable={updateAvailable}
             />
         </>
     );

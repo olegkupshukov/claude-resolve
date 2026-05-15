@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 
-export default function ChatInput({ onSend, onStop, isProcessing, sidebarOpen, onToggleSidebar }) {
+export default function ChatInput({ onSend, onStop, isProcessing, sidebarOpen, onToggleSidebar, updateAvailable }) {
     const inputRef = useRef(null);
 
     useEffect(() => {
@@ -31,6 +31,7 @@ export default function ChatInput({ onSend, onStop, isProcessing, sidebarOpen, o
                 aria-label="Settings"
             >
                 &#9881;
+                {updateAvailable && <span className="btn-gear-badge" aria-label="Update available" />}
             </button>
             <input
                 ref={inputRef}

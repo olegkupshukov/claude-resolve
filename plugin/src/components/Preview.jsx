@@ -1,67 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo, memo } from 'react';
 
-function OGrafPreview({ parsed }) {
-    const iframeRef = useRef(null);
-    const [isPlaying, setIsPlaying] = useState(true);
-
-    const srcdoc = useMemo(() => {
-        const manifest = JSON.parse(parsed.manifestJSON);
-        const duration = manifest.duration || 5;
-        const defaults = {};
-        const props = manifest.schema && manifest.schema.properties;
-        if (props) {
-            for (const [key, prop] of Object.entries(props)) {
-                if (prop.default !== undefined) defaults[key] = prop.default;
-            }
-        }
-
-        return `<!DOCTYPE html>
-<html><head><style>
-html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden}
-#host{position:relative;width:100%;height:100%}
-</style></head><body>
-<div id="host"></div>
-<script type="module">
-const code=${JSON.stringify(parsed.componentJS)};
-const blob=new Blob([code],{type:'text/javascript'});
-const url=URL.createObjectURL(blob);
-const mod=await import(url);
-URL.revokeObjectURL(url);
-const Cls=mod.default;
-customElements.define('ograf-preview',Cls);
-const el=document.createElement('ograf-preview');
-document.getElementById('host').appendChild(el);
-await el.load({data:${JSON.stringify(defaults)}});
-await el.playAction();
-let t=0;const dur=${duration}*1000;const step=1000/30;let iv=null;
-function play(){if(iv)return;iv=setInterval(async()=>{t+=step;if(t>dur)t=0;await el.goToTime({timestamp:t})},step)}
-function pause(){if(iv){clearInterval(iv);iv=null}}
-window.addEventListener('message',e=>{if(e.data==='play')play();else if(e.data==='pause')pause()});
-play();
-<\/script></body></html>`;
-    }, [parsed]);
-
-    function togglePlay() {
-        const next = !isPlaying;
-        setIsPlaying(next);
-        iframeRef.current?.contentWindow?.postMessage(next ? 'play' : 'pause', '*');
-    }
-
-    return (
-        <div className="preview-wrapper">
-            <iframe
-                ref={iframeRef}
-                className="preview-frame"
-                sandbox="allow-scripts"
-                srcDoc={srcdoc}
-            />
-            <button className="btn-icon btn-play" onClick={togglePlay}>
-                {isPlaying ? '\u23F8' : '\u25B6'}
-            </button>
-        </div>
-    );
-}
-
 const HTMLPreview = memo(function HTMLPreview({ parsed }) {
     const iframeRef = useRef(null);
     const containerRef = useRef(null);
@@ -123,13 +61,12 @@ requestAnimationFrame(tick);
                 />
             </div>
             <button className="btn-icon btn-play" onClick={togglePlay}>
-                {isPlaying ? '\u23F8' : '\u25B6'}
+                {isPlaying ? '⏸' : '▶'}
             </button>
         </div>
     );
 });
 
 export default function Preview({ parsed }) {
-    if (parsed.type === 'html') return <HTMLPreview parsed={parsed} />;
-    return <OGrafPreview parsed={parsed} />;
+    return <HTMLPreview parsed={parsed} />;
 }
