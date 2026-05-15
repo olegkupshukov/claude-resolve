@@ -150,17 +150,17 @@ body, #root {
 }
 
 .btn:active {
-    transform: scale(0.97);
+    transform: scale(var(--scale-press));
     background: var(--color-accent-active);
 }
 
 #prompt:disabled {
-    opacity: 0.5;
+    opacity: var(--opacity-disabled);
     cursor: not-allowed;
 }
 
 .btn:disabled {
-    opacity: 0.5;
+    opacity: var(--opacity-disabled);
     cursor: not-allowed;
     pointer-events: none;
 }
@@ -297,7 +297,7 @@ body, #root {
 
 .sidebar {
     flex-shrink: 0;
-    width: 220px;
+    width: var(--sidebar-width);
     background: var(--color-panel);
     border-right: 1px solid var(--color-border);
     overflow-y: auto;
@@ -406,7 +406,7 @@ body, #root {
 }
 
 .btn-gear:active {
-    transform: scale(0.97);
+    transform: scale(var(--scale-press));
     background: var(--color-accent-active);
 }
 
@@ -448,7 +448,7 @@ body, #root {
 }
 
 .segment:active {
-    transform: scale(0.97);
+    transform: scale(var(--scale-press));
 }
 
 /* Settings selects */
@@ -534,7 +534,7 @@ body, #root {
 }
 
 .btn-icon:active {
-    transform: scale(0.95);
+    transform: scale(var(--scale-press));
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -554,7 +554,7 @@ body, #root {
 }
 
 .btn-text:disabled {
-    opacity: 0.5;
+    opacity: var(--opacity-disabled);
     cursor: default;
 }
 
@@ -611,7 +611,7 @@ body, #root {
 
 @media (hover: hover) and (pointer: fine) {
     .btn-text:hover {
-        color: var(--color-error);
+        color: var(--color-text);
     }
 }
 
@@ -642,8 +642,8 @@ body, #root {
 }
 
 .welcome-title {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
     color: var(--color-text);
     margin-bottom: var(--gap-xs);
 }
@@ -688,7 +688,7 @@ body, #root {
 }
 
 .welcome-chip:active {
-    transform: scale(0.97);
+    transform: scale(var(--scale-press));
 }
 
 .welcome-blank-link {

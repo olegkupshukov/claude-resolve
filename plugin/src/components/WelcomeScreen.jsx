@@ -48,7 +48,7 @@ export default function WelcomeScreen({ authState, onAuthStateChange, onStart, o
                     <button className="btn" onClick={() => window.claudeAPI.openLoginTerminal()}>
                         Open Login in Terminal
                     </button>
-                    <button className="btn btn-secondary" style={{ marginTop: 8 }} onClick={handleCheckAgain}>
+                    <button className="btn btn-secondary" style={{ marginTop: 'var(--gap-sm)' }} onClick={handleCheckAgain}>
                         Check Again
                     </button>
                 </div>

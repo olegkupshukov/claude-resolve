@@ -19,6 +19,10 @@
     --font-size-base: 13px;
     --font-size-sm: 11px;
     --font-size-xs: 10px;
+    --font-size-lg: 20px;
+    --font-weight-normal: 400;
+    --font-weight-medium: 600;
+    --font-weight-bold: 800;
 
     /* Spacing */
     --gap-xs: 6px;
@@ -38,4 +42,12 @@
     /* Durations */
     --duration-fast: 100ms;
     --duration-normal: 150ms;
+    --duration-slow: 300ms;
+
+    /* States */
+    --opacity-disabled: 0.5;
+    --scale-press: 0.97;
+
+    /* Layout */
+    --sidebar-width: 220px;
 }
