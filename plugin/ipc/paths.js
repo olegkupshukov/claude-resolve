@@ -21,6 +21,9 @@ const CLAUDE_PATH = isMac
 // Rendered .mov output directory
 const RENDER_DIR = path.join(RESOLVE_DATA, 'Claude Resolve', 'renders');
 
+// Thumbnail directory (one PNG per render, written by render.py)
+const THUMBNAIL_DIR = path.join(RENDER_DIR, 'thumbnails');
+
 // Plugin config directory
 const CONFIG_DIR = path.join(RESOLVE_DATA, 'Claude Resolve');
 
@@ -63,6 +66,7 @@ module.exports = {
     isMac,
     CLAUDE_PATH,
     RENDER_DIR,
+    THUMBNAIL_DIR,
     CONFIG_DIR,
     PYTHON_CANDIDATES,
     PYTHON_VERIFY_CMD,

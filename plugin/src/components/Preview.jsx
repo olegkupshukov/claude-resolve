@@ -161,21 +161,19 @@ const HTMLPreview = memo(function HTMLPreview({ parsed }) {
     }
 
     return (
-        <div className="preview-wrapper">
-            <div ref={containerRef} className="preview-scale-container">
-                <iframe
-                    key={replayKey}
-                    ref={iframeRef}
-                    className="preview-frame-native"
-                    width="1920"
-                    height="1080"
-                    sandbox="allow-scripts"
-                    srcDoc={srcdoc}
-                    style={{ transform: `scale(${scale})` }}
-                />
-            </div>
+        <div ref={containerRef} className="card-preview">
+            <iframe
+                key={replayKey}
+                ref={iframeRef}
+                className="card-preview-frame"
+                width="1920"
+                height="1080"
+                sandbox="allow-scripts"
+                srcDoc={srcdoc}
+                style={{ transform: `scale(${scale})` }}
+            />
             {parsed.mode !== 'realtime' && (
-                <button className="btn-icon btn-play" onClick={togglePlay}>
+                <button className="card-play" onClick={togglePlay}>
                     {isPlaying ? '⏸' : '▶'}
                 </button>
             )}

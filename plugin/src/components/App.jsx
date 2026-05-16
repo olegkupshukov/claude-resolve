@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import StatusBar from './StatusBar';
+import TitleBar from './TitleBar';
 import Chat from './Chat';
 import ChatInput from './ChatInput';
 import Sidebar from './Sidebar';
@@ -131,8 +131,8 @@ export default function App() {
         }
     }
 
-    function handleToggleSidebar() {
-        const next = !sidebarOpen;
+    // Sidebar collapsed → narrow window + 40px rail; expanded → wide window.
+    function applySidebar(next) {
         setSidebarOpen(next);
         window.windowAPI.resize({ width: next ? 720 : 500, height: 700 }).catch(() => {});
     }
@@ -141,17 +141,17 @@ export default function App() {
 
     return (
         <>
-            <StatusBar />
-            <div className="app-body">
-                {sidebarOpen && (
-                    <Sidebar
-                        isOpen={sidebarOpen}
-                        config={config}
-                        onConfigChange={handleConfigChange}
-                        onClose={handleToggleSidebar}
-                    />
-                )}
-                <div className="app-main">
+            <div className="accent-strip" />
+            <TitleBar />
+            <div className={'body' + (sidebarOpen ? '' : ' collapsed')}>
+                <Sidebar
+                    collapsed={!sidebarOpen}
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    onExpand={() => applySidebar(true)}
+                    updateAvailable={updateAvailable}
+                />
+                <div className="main">
                     {showWelcome ? (
                         <WelcomeScreen
                             authState={authState}
@@ -161,18 +161,24 @@ export default function App() {
                             onDismiss={() => setWelcomed(false)}
                         />
                     ) : (
-                        <Chat messages={messages} activeTool={activeTool} tokenCount={tokenCount} model={config.model} />
+                        <Chat
+                            messages={messages}
+                            activeTool={activeTool}
+                            tokenCount={tokenCount}
+                            model={config.model}
+                            config={config}
+                        />
                     )}
+                    <ChatInput
+                        onSend={handleSend}
+                        onStop={handleStop}
+                        isProcessing={isProcessing}
+                        sidebarOpen={sidebarOpen}
+                        onToggleSidebar={() => applySidebar(!sidebarOpen)}
+                        updateAvailable={updateAvailable}
+                    />
                 </div>
             </div>
-            <ChatInput
-                onSend={handleSend}
-                onStop={handleStop}
-                isProcessing={isProcessing}
-                sidebarOpen={sidebarOpen}
-                onToggleSidebar={handleToggleSidebar}
-                updateAvailable={updateAvailable}
-            />
         </>
     );
 }

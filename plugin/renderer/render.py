@@ -233,6 +233,20 @@ def main():
             else:
                 render_realtime_precise_mode(page, args, frames_dir, total_frames)
 
+            # Save a sidebar thumbnail from ~85% through the animation —
+            # late enough to show the resolved state, before any fade-out.
+            thumb_idx = min(total_frames - 1, max(0, int(total_frames * 0.85)))
+            thumb_src = os.path.join(frames_dir, f"frame_{thumb_idx:06d}.png")
+            if os.path.exists(thumb_src):
+                try:
+                    thumb_dir = Path(args.output).resolve().parent / "thumbnails"
+                    thumb_dir.mkdir(parents=True, exist_ok=True)
+                    thumb_dst = thumb_dir / (Path(args.output).stem + ".png")
+                    shutil.copyfile(thumb_src, thumb_dst)
+                    emit({"type": "thumbnail", "path": str(thumb_dst)})
+                except OSError as e:
+                    emit({"type": "warning", "message": f"thumbnail save failed: {e}"})
+
             browser.close()
 
         ffmpeg_cmd = [

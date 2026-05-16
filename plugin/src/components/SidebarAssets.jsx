@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Sync } from './Icons';
+import { hashGradient } from '../utils/hashGradient';
 
 export default function SidebarAssets({ isOpen }) {
     const [renders, setRenders] = useState([]);
@@ -26,7 +28,7 @@ export default function SidebarAssets({ isOpen }) {
         setSyncStatus('syncing');
         try {
             const result = await window.overlayAPI.syncToMediaPool();
-            setSyncStatus(result.synced > 0 ? `Synced ${result.synced}` : 'All synced ✓');
+            setSyncStatus(result.synced > 0 ? `Synced ${result.synced}` : 'All synced');
         } catch {
             setSyncStatus('Sync failed');
         }
@@ -34,33 +36,43 @@ export default function SidebarAssets({ isOpen }) {
     }
 
     return (
-        <div className="sidebar-section">
-            <label className="sidebar-label">Assets</label>
-
-            <div className="sidebar-subsection">
-                <div className="sidebar-sub-header">
-                    <span>Renders</span>
-                    <span className="panel-header-actions">
-                        {syncStatus
-                            ? <span className="sync-status">{syncStatus}</span>
-                            : <button className="btn-text" onClick={handleSync}>Sync</button>}
-                        {renders.length > 0 && (
-                            <button className="btn-text" onClick={handleDeleteAllRenders}>Delete All</button>
-                        )}
-                    </span>
-                </div>
-                {renders.length === 0 ? (
-                    <div className="sidebar-empty">No renders</div>
-                ) : (
-                    renders.map(r => (
-                        <div className="template-row" key={r.name}>
-                            <span className="template-name">{r.name}</span>
-                            <span className="render-size">{(r.size / 1048576).toFixed(1)} MB</span>
-                            <button className="btn-icon btn-delete" title="Delete" onClick={() => handleDeleteRender(r.name)}>&#10005;</button>
-                        </div>
-                    ))
-                )}
+        <div className="sb-section">
+            <div className="sb-title">
+                <span>Assets · Renders</span>
+                <span className="sb-actions">
+                    {syncStatus
+                        ? <span className="sync-status">{syncStatus}</span>
+                        : <button className="sync" onClick={handleSync}><Sync /> Sync</button>}
+                    {renders.length > 0 && (
+                        <button className="sync" onClick={handleDeleteAllRenders}>Clear</button>
+                    )}
+                </span>
             </div>
+
+            {renders.length === 0 ? (
+                <div className="sb-empty">No renders yet</div>
+            ) : (
+                <div className="render-list">
+                    {renders.map(r => (
+                        <div className="render" key={r.name}>
+                            {r.thumbnail
+                                ? <img className="render-thumb" src={r.thumbnail} alt="" />
+                                : <div className="render-thumb" style={{ background: hashGradient(r.name) }} />}
+                            <div className="render-meta">
+                                <div className="render-name">{r.name}</div>
+                                <div className="render-sub">{(r.size / 1048576).toFixed(1)} MB</div>
+                            </div>
+                            <button
+                                className="render-del"
+                                title="Delete"
+                                onClick={() => handleDeleteRender(r.name)}
+                            >
+                                &#10005;
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

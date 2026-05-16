@@ -25,69 +25,83 @@ export default function SidebarSettings({ config, onConfigChange }) {
         setChecking(false);
     }
 
-    function renderStatus() {
-        if (checking) return <span className="update-status">Checking…</span>;
-        if (!update) return null;
-        if (update.error) return <span className="update-status update-status-error">Check failed</span>;
-        if (update.hasUpdate) {
+    function renderUpdateLink() {
+        if (checking) {
+            return <button className="meta-link" disabled>Checking…</button>;
+        }
+        if (update && update.error) {
+            return <button className="meta-link error" onClick={() => runCheck(true)}>Retry</button>;
+        }
+        if (update && update.hasUpdate) {
             return (
                 <button
-                    className="update-status update-status-available"
+                    className="meta-link"
                     onClick={() => window.windowAPI.openExternal(update.downloadUrl)}
                 >
-                    Update available: v{String(update.latest).replace(/^v/, '')}
+                    Update v{String(update.latest).replace(/^v/, '')}
                 </button>
             );
         }
-        return <span className="update-status">Up to date</span>;
+        if (update) {
+            return (
+                <button className="meta-link" onClick={() => runCheck(true)} title="Check again">
+                    Up to date
+                </button>
+            );
+        }
+        return <button className="meta-link" onClick={() => runCheck(true)}>Check for updates</button>;
     }
 
-    const versionText = update?.current ? `v${update.current}` : '';
+    const versionText = update?.current ? `v${update.current}` : 'Claude Resolve';
 
     return (
-        <div className="sidebar-section">
-            <label className="sidebar-label">Settings</label>
-            <div className="sidebar-setting">
-                <span>Model</span>
-                <select value={config.model || 'sonnet'} onChange={e => onConfigChange({ model: e.target.value })}>
-                    <option value="sonnet">Sonnet (fast)</option>
-                    <option value="opus">Opus (smart)</option>
+        <div className="settings">
+            <div className="sb-title"><span>Settings</span></div>
+
+            <div className="set-row">
+                <label>Model</label>
+                <select
+                    className="select"
+                    value={config.model || 'sonnet'}
+                    onChange={e => onConfigChange({ model: e.target.value })}
+                >
+                    <option value="sonnet">Sonnet · fast</option>
+                    <option value="opus">Opus · smart</option>
                 </select>
             </div>
-            <div className="sidebar-setting">
-                <span>FPS</span>
-                <select value={config.fps} onChange={e => onConfigChange({ fps: Number(e.target.value) })}>
+
+            <div className="set-row">
+                <label>FPS</label>
+                <select
+                    className="select"
+                    value={config.fps}
+                    onChange={e => onConfigChange({ fps: Number(e.target.value) })}
+                >
                     <option value={24}>24</option>
                     <option value={25}>25</option>
                     <option value={30}>30</option>
                     <option value={60}>60</option>
                 </select>
             </div>
-            <div className="sidebar-setting">
-                <span>Resolution</span>
+
+            <div className="set-row">
+                <label>Resolution</label>
                 <select
+                    className="select"
                     value={`${config.width}x${config.height}`}
                     onChange={e => {
                         const [w, h] = e.target.value.split('x').map(Number);
                         onConfigChange({ width: w, height: h });
                     }}
                 >
-                    <option value="1920x1080">1920x1080</option>
-                    <option value="3840x2160">3840x2160</option>
+                    <option value="1920x1080">1920 × 1080</option>
+                    <option value="3840x2160">3840 × 2160</option>
                 </select>
             </div>
-            <div className="sidebar-setting sidebar-setting-stack">
-                <div className="sidebar-setting-row">
-                    <span>Version {versionText}</span>
-                    {renderStatus()}
-                </div>
-                <button
-                    className="btn-text sidebar-setting-check"
-                    onClick={() => runCheck(true)}
-                    disabled={checking}
-                >
-                    Check for Updates
-                </button>
+
+            <div className="meta-line">
+                <span>{versionText}</span>
+                {renderUpdateLink()}
             </div>
         </div>
     );

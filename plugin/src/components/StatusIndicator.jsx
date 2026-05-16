@@ -32,17 +32,20 @@ export default function StatusIndicator({ tool, tokens, model }) {
         return () => clearInterval(id);
     }, []);
 
-    const parts = ['Thinking...'];
+    const parts = ['Thinking'];
     if (elapsed > 0) parts.push(`${elapsed}s`);
     if (tokens > 0) parts.push(`${tokens} tokens`);
     if (model) parts.push(MODEL_LABELS[model] || model);
     if (tool) {
         const action = TOOL_LABELS[tool.name] || tool.name;
         const file = shortPath(tool.file);
-        parts.push(file ? `${action} ${file}...` : `${action}...`);
+        parts.push(file ? `${action} ${file}` : action);
     }
 
     return (
-        <span className="status-indicator">{parts.join(' · ')}</span>
+        <div className="tool">
+            <span className="spin" />
+            <span>{parts.join(' · ')}</span>
+        </div>
     );
 }

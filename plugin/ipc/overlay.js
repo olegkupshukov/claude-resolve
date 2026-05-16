@@ -1,11 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { pathToFileURL } = require('url');
 const { spawn, execSync } = require('child_process');
 const { getResolve, getCurrentProject } = require('./resolve');
 const { readConfig } = require('./config');
 const {
-    RENDER_DIR,
+    RENDER_DIR, THUMBNAIL_DIR,
     PYTHON_CANDIDATES, PYTHON_VERIFY_CMD,
     FFMPEG_CANDIDATES, FFMPEG_VERIFY_CMD
 } = require('./paths');
@@ -198,7 +199,9 @@ function handleListRenders() {
         .filter(f => f.endsWith('.mov'))
         .map(f => {
             const stat = fs.statSync(path.join(RENDER_DIR, f));
-            return { name: f, size: stat.size };
+            const thumbFile = path.join(THUMBNAIL_DIR, f.slice(0, -4) + '.png');
+            const thumbnail = fs.existsSync(thumbFile) ? pathToFileURL(thumbFile).href : null;
+            return { name: f, size: stat.size, thumbnail };
         });
 }
 
@@ -236,6 +239,8 @@ function handleDeleteRender(_event, name) {
     const p = path.join(RENDER_DIR, name);
     if (!fs.existsSync(p)) return false;
     fs.rmSync(p);
+    const thumb = path.join(THUMBNAIL_DIR, name.replace(/\.mov$/i, '.png'));
+    if (fs.existsSync(thumb)) fs.rmSync(thumb);
     return true;
 }
 

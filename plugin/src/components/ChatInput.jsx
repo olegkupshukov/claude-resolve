@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { Gear, Send, Stop } from './Icons';
 
 export default function ChatInput({ onSend, onStop, isProcessing, sidebarOpen, onToggleSidebar, updateAvailable }) {
     const inputRef = useRef(null);
@@ -24,28 +25,37 @@ export default function ChatInput({ onSend, onStop, isProcessing, sidebarOpen, o
     }
 
     return (
-        <div id="input-bar">
+        <div className="composer">
             <button
-                className={'btn-gear' + (sidebarOpen ? ' btn-gear-active' : '')}
+                className={'composer-gear' + (sidebarOpen ? ' on' : '')}
                 onClick={onToggleSidebar}
-                aria-label="Settings"
+                aria-label="Toggle settings and renders"
+                title="Settings & renders"
             >
-                &#9881;
-                {updateAvailable && <span className="btn-gear-badge" aria-label="Update available" />}
+                <Gear />
+                {updateAvailable && <span className="gear-badge" />}
             </button>
-            <input
-                ref={inputRef}
-                type="text"
-                id="prompt"
-                placeholder="Ask Claude..."
-                autoFocus
-                disabled={isProcessing}
-                onKeyDown={handleKeyDown}
-            />
-            {!isProcessing ? (
-                <button className="btn" onClick={handleSend}>Send</button>
+
+            <div className="input-wrap">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    className="composer-input"
+                    placeholder="Ask Claude to animate…"
+                    autoFocus
+                    disabled={isProcessing}
+                    onKeyDown={handleKeyDown}
+                />
+            </div>
+
+            {isProcessing ? (
+                <button className="send stop" onClick={onStop} aria-label="Stop">
+                    <Stop />
+                </button>
             ) : (
-                <button className="btn btn-stop" onClick={onStop}>Stop</button>
+                <button className="send" onClick={handleSend} aria-label="Send">
+                    <Send />
+                </button>
             )}
         </div>
     );
