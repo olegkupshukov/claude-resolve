@@ -99,8 +99,12 @@ const PYTHON_CANDIDATES = isMac
         'python'
     ];
 
+// macOS: probe via a login+interactive shell so the lookup sees the
+// user's real PATH (/usr/local/bin, /opt/homebrew/bin) and resolves the
+// python3 that actually has Playwright — not the bare /usr/bin/python3
+// that a stripped-PATH /bin/sh probe would find first.
 const PYTHON_VERIFY_CMD = isMac
-    ? 'python3 -c "import sys; print(sys.executable)"'
+    ? "zsh -lic 'command -v python3' 2>/dev/null"
     : 'python -c "import sys; print(sys.executable)"';
 
 // FFmpeg executable candidates
