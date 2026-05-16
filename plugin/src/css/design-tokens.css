@@ -1,5 +1,6 @@
-/* Claude Resolve — design tokens
-   Palette derived directly from the brand icon (warm orange → amber → green → teal). */
+/* Claude Resolve — design tokens (single source of truth).
+   Every color and size literal lives here; styles.css references var() only.
+   Palette derived from the brand icon (warm orange → amber → green → teal). */
 
 @font-face {
     font-family: "Inter";
@@ -16,69 +17,163 @@
 }
 
 :root {
-    /* Warm / cool palette (icon gradient stops) */
+    /* ───────────── Brand palette ───────────── */
     --warm-100: #F2A06A;
     --warm-200: #E8843A;   /* icon orange */
     --warm-300: #C26A28;
-    --warm-400: #8C4A1B;
     --mid:      #D4A44C;   /* icon mid amber */
     --cool-100: #A8DDC1;
     --cool-200: #80C499;   /* icon green */
     --cool-300: #4CC9B0;   /* icon teal */
     --cool-400: #2F8F7C;
 
-    /* Surfaces */
-    --bg-0:      #0d0d10;
-    --bg-1:      #1A1A1C;   /* window canvas — matches icon bg */
-    --bg-2:      #1F1F22;
-    --bg-3:      #26262A;
-    --bg-4:      #303035;
-    --line:      #2A2A2E;
-    --line-soft: #222226;
+    /* ───────────── Surfaces ───────────── */
+    --bg-0:            #0d0d10;
+    --bg-1:            #1A1A1C;   /* window canvas — matches icon bg */
+    --bg-2:            #1F1F22;
+    --bg-3:            #26262A;
+    --bg-4:            #303035;
+    --bg-titlebar:     #1E1E21;   /* titlebar gradient start */
+    --bg-card-head:    #1E1E22;   /* render card header */
+    --bg-sunken:       #16161a;   /* settings / card foot */
+    --bg-composer-end: #161618;   /* composer gradient end */
+    --bg-preview:      #0d0e10;   /* render thumb / preview base */
+    --bg-deep:         #0a0b0e;   /* near-black border / preview top */
+    --bg-user-bubble:  #1F1F26;
+    --bg-chip-hi:      #2C2C30;   /* chip hover gradient top */
+    --bg-chip-lo:      #232327;   /* chip hover gradient bottom */
+    --bg-scroll-hover: #3a3a3e;
+    --bg-error:        #3c1f1c;
+    --line:            #2A2A2E;
+    --line-soft:       #222226;
 
-    /* Foreground */
-    --fg-0:      #F3F1EC;
-    --fg-1:      #C7C5C0;
-    --fg-2:      #8A8985;
-    --fg-3:      #5C5B58;
-    --fg-4:      #38383A;
+    /* ───────────── Foreground ───────────── */
+    --fg-0: #F3F1EC;
+    --fg-1: #C7C5C0;
+    --fg-2: #8A8985;
+    --fg-3: #5C5B58;
+    --fg-4: #38383A;
+    --fg-on-warm: #1A0A02;   /* dark text on the warm gradient */
 
+    --white: #FFFFFF;
     --color-error: #ff8a7a;
 
-    --gradient: linear-gradient(135deg, var(--warm-200) 0%, var(--mid) 35%, var(--cool-200) 65%, var(--cool-300) 100%);
-    --gradient-soft: linear-gradient(135deg, rgba(232,132,58,.18) 0%, rgba(76,201,176,.18) 100%);
+    /* ───────────── Translucent fills ───────────── */
+    --sel-bg:        rgba(232, 132, 58, .35);
+    --warm-bg:       rgba(232, 132, 58, .12);
+    --warm-bg-soft:  rgba(232, 132, 58, .08);
+    --warm-border:   rgba(232, 132, 58, .5);
+    --cool-bg:       rgba(76, 201, 176, .12);
+    --cool-bg-soft:  rgba(76, 201, 176, .06);
+    --cool-border:   rgba(76, 201, 176, .3);
+    --scrim:         rgba(0, 0, 0, .5);
+    --scrim-strong:  rgba(0, 0, 0, .7);
+    --hairline:      rgba(255, 255, 255, .2);
+    --progress-fill: rgba(255, 255, 255, .6);
 
-    /* Typography */
+    /* ───────────── Gradients ───────────── */
+    --gradient:            linear-gradient(135deg, var(--warm-200) 0%, var(--mid) 35%, var(--cool-200) 65%, var(--cool-300) 100%);
+    --gradient-titlebar:   linear-gradient(180deg, var(--bg-titlebar), var(--bg-1));
+    --gradient-composer:   linear-gradient(180deg, var(--bg-1), var(--bg-composer-end));
+    --gradient-chip-hover: linear-gradient(180deg, var(--bg-chip-hi) 0%, var(--bg-chip-lo) 100%);
+    --gradient-preview:    linear-gradient(180deg, var(--bg-deep), var(--bg-preview));
+    --gradient-tool:       linear-gradient(90deg, rgba(232, 132, 58, .06), transparent);
+    --gradient-ico-1:      linear-gradient(135deg, var(--warm-100), var(--warm-300));
+    --gradient-ico-2:      linear-gradient(135deg, var(--warm-200), var(--cool-200));
+    --gradient-ico-3:      linear-gradient(135deg, var(--cool-100), var(--cool-400));
+
+    /* ───────────── Shadows ───────────── */
+    --shadow-logo:           0 0 0 1px rgba(0, 0, 0, .4), 0 2px 10px rgba(232, 132, 58, .18);
+    --shadow-w-logo:         0 0 0 1px rgba(0, 0, 0, .5), 0 0 0 5px rgba(255, 255, 255, .02), 0 20px 50px rgba(232, 132, 58, .22), 0 20px 50px rgba(76, 201, 176, .16);
+    --shadow-dot:            0 0 6px var(--warm-200);
+    --shadow-dot-dim:        0 0 2px var(--warm-200);
+    --shadow-chip-hover:     0 8px 24px rgba(0, 0, 0, .35), 0 0 0 1px rgba(232, 132, 58, .1);
+    --shadow-card:           0 8px 24px rgba(0, 0, 0, .45), 0 1px 0 rgba(255, 255, 255, .03) inset;
+    --shadow-btn:            0 1px 0 rgba(255, 255, 255, .2) inset, 0 4px 14px rgba(232, 132, 58, .25);
+    --shadow-btn-hover:      0 1px 0 rgba(255, 255, 255, .25) inset, 0 8px 20px rgba(232, 132, 58, .32);
+    --shadow-send-hover:     0 1px 0 rgba(255, 255, 255, .25) inset, 0 8px 22px rgba(232, 132, 58, .35);
+    --shadow-thumb:          inset 0 0 0 1px var(--line);
+    --shadow-badge-frame:    inset 0 0 0 1px rgba(232, 132, 58, .3);
+    --shadow-badge-realtime: inset 0 0 0 1px rgba(76, 201, 176, .35);
+    --shadow-focus-ring:     0 0 0 2px rgba(232, 132, 58, .15);
+    --shadow-focus-glow:     0 0 0 3px rgba(232, 132, 58, .12);
+    --shadow-gear-badge:     0 0 0 2px var(--bg-1);
+
+    /* ───────────── Typography ───────────── */
     --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, "Consolas", monospace;
-    --font-size-base: 13px;
 
-    /* Easing — Emil-style, never default ease/linear */
+    /* font-size scale — token name carries the px value (p = decimal point) */
+    --fs-9p5:  9.5px;
+    --fs-10:   10px;
+    --fs-10p5: 10.5px;
+    --fs-11:   11px;
+    --fs-11p5: 11.5px;
+    --fs-12:   12px;
+    --fs-12p5: 12.5px;
+    --fs-13:   13px;
+    --fs-14:   14px;
+    --fs-26:   26px;
+
+    --weight-medium:   500;
+    --weight-semibold: 600;
+    --weight-bold:     700;
+
+    --tracking-tight: -.015em;
+    --tracking-1:     .02em;
+    --tracking-2:     .08em;
+    --tracking-3:     .14em;
+
+    /* ───────────── Spacing / sizing scale ───────────── */
+    /* One spatial scale for padding, gap, dimensions, radius and offsets.
+       The handoff is not on a regular step, so each used value is a token. */
+    --size-1:   1px;
+    --size-2:   2px;
+    --size-3:   3px;
+    --size-4:   4px;
+    --size-5:   5px;
+    --size-6:   6px;
+    --size-7:   7px;
+    --size-8:   8px;
+    --size-9:   9px;
+    --size-10:  10px;
+    --size-11:  11px;
+    --size-12:  12px;
+    --size-14:  14px;
+    --size-16:  16px;
+    --size-18:  18px;
+    --size-20:  20px;
+    --size-22:  22px;
+    --size-24:  24px;
+    --size-26:  26px;
+    --size-28:  28px;
+    --size-30:  30px;
+    --size-32:  32px;
+    --size-36:  36px;
+    --size-38:  38px;
+    --size-64:  64px;
+    --size-78:  78px;
+    --size-300: 300px;
+    --size-360: 360px;
+
+    --radius-full: 50%;
+    --aspect-video: 16 / 9;
+
+    /* background-size for the icon inside a logo/avatar box */
+    --bg-fit-logo:   78%;
+    --bg-fit-avatar: 88%;
+
+    /* ───────────── Motion ───────────── */
     --ease-out-expo:     cubic-bezier(0.16, 1, 0.3, 1);
     --ease-out-quint:    cubic-bezier(0.22, 1, 0.36, 1);
     --ease-spring:       cubic-bezier(0.34, 1.56, 0.64, 1);
     --ease-soft-spring:  cubic-bezier(0.22, 1.2, 0.36, 1);
     --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
 
-    /* Durations */
-    --duration-fast: 120ms;
+    --duration-fast:   120ms;
     --duration-normal: 180ms;
-    --duration-slow: 320ms;
+    --duration-slow:   320ms;
 
-    /* Radii */
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 10px;
-
-    /* Spacing */
-    --gap-xs: 6px;
-    --gap-sm: 8px;
-    --gap-md: 12px;
-    --gap-lg: 16px;
-
-    /* Layout */
+    /* ───────────── Layout ───────────── */
     --sidebar-width: 220px;
-
-    /* States */
-    --opacity-disabled: 0.5;
 }

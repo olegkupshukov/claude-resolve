@@ -74,7 +74,7 @@ def build_init_script():
     for family, path, fmt, weight_range in FONT_FACES:
         if not path.exists():
             raise FileNotFoundError(f"Missing font file: {path}")
-        uri = path.as_uri()  # file:///F:/...
+        uri = path.as_uri()  # absolute file:// URL
         font_rules.append(
             f'@font-face {{ '
             f'font-family: "{family}"; '

@@ -131,7 +131,7 @@ export default function App() {
         }
     }
 
-    // Sidebar collapsed → narrow window + 40px rail; expanded → wide window.
+    // Sidebar closed → narrow window; open → wide window.
     function applySidebar(next) {
         setSidebarOpen(next);
         window.windowAPI.resize({ width: next ? 720 : 500, height: 700 }).catch(() => {});
