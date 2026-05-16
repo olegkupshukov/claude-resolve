@@ -4,7 +4,7 @@ import { Github, Insta } from './Icons';
 const CHIPS = [
     { ico: 'G', title: 'Create a glitch title animation', hint: '/title --style=glitch' },
     { ico: 'L', title: 'Animate a lower third in teal', hint: '/lower-third --transparent' },
-    { ico: 'T', title: 'Generate a film-burn transition', hint: '/transition --type=burn' }
+    { ico: 'C', title: 'Animate a kinetic caption', hint: '/caption --kinetic' }
 ];
 
 export default function WelcomeScreen({ authState, onAuthStateChange, onStart, onPrompt, onDismiss }) {

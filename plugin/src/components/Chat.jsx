@@ -54,7 +54,11 @@ function RenderMovAction({ parsed }) {
     if (status === 'rendered') {
         return <button className="btn-render" disabled>Rendered &#10003;</button>;
     }
-    return <button className="btn-render error" disabled title={errorMsg}>Render Failed</button>;
+    return (
+        <button className="btn-render error" disabled title={errorMsg}>
+            Render Failed: {errorMsg}
+        </button>
+    );
 }
 
 function RenderCard({ parsed, config }) {

@@ -710,6 +710,7 @@ body, #root {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 8px 10px;
     background: #16161a;
@@ -766,6 +767,10 @@ body, #root {
     color: var(--color-error);
     background: #3c1f1c;
     box-shadow: none;
+    flex: 1 1 100%;        /* full-width row below the specs */
+    white-space: normal;   /* let the error message wrap */
+    text-align: left;
+    cursor: default;
 }
 .render-progress {
     position: absolute;
