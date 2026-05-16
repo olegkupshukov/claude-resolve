@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { pathToFileURL } = require('url');
+const { shell } = require('electron');
 const { spawn, execSync } = require('child_process');
 const { getResolve, getCurrentProject } = require('./resolve');
 const { readConfig } = require('./config');
@@ -244,6 +245,13 @@ function handleDeleteRender(_event, name) {
     return true;
 }
 
+function handleRevealRender(_event, name) {
+    const p = path.join(RENDER_DIR, name);
+    if (!fs.existsSync(p)) return false;
+    shell.showItemInFolder(p);
+    return true;
+}
+
 function handleDeleteAllRenders() {
     if (!fs.existsSync(RENDER_DIR)) return false;
     fs.rmSync(RENDER_DIR, { recursive: true, force: true });
@@ -256,6 +264,7 @@ function setupOverlayHandlers(ipcMain, win) {
     ipcMain.handle('overlay:renderMov', handleRenderMov);
     ipcMain.handle('renders:list', handleListRenders);
     ipcMain.handle('renders:delete', handleDeleteRender);
+    ipcMain.handle('renders:reveal', handleRevealRender);
     ipcMain.handle('renders:deleteAll', handleDeleteAllRenders);
     ipcMain.handle('renders:syncToMediaPool', handleSyncToMediaPool);
 }

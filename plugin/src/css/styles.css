@@ -93,12 +93,11 @@ body, #root {
 .body {
     flex: 1 1 auto;
     display: grid;
-    grid-template-columns: var(--sb, var(--sidebar-width)) 1fr;
+    grid-template-columns: 1fr;
     min-height: 0;
     overflow: hidden;
-    transition: grid-template-columns .42s var(--ease-out-quint);
 }
-.body.collapsed { --sb: var(--sidebar-rail); }
+.body.sidebar-open { grid-template-columns: var(--sidebar-width) 1fr; }
 
 .main {
     display: flex;
@@ -118,43 +117,6 @@ body, #root {
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
-}
-
-/* collapsed rail */
-.sb-rail {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 0;
-}
-.rail-btn {
-    position: relative;
-    width: 26px;
-    height: 26px;
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--fg-3);
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: background var(--duration-normal) var(--ease-out-quint),
-                color var(--duration-normal) var(--ease-out-quint),
-                transform .25s var(--ease-spring);
-}
-.rail-btn:hover { background: var(--bg-3); color: var(--fg-0); transform: scale(1.05); }
-.rail-btn.active { color: var(--warm-200); background: rgba(232, 132, 58, .08); }
-.rail-sep { width: 18px; height: 1px; background: var(--line-soft); }
-.rail-badge {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--warm-200);
-    box-shadow: 0 0 0 2px var(--bg-2);
 }
 
 /* assets section */
@@ -226,7 +188,15 @@ body, #root {
 }
 
 .render-meta { min-width: 0; }
+.render-name-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+}
 .render-name {
+    flex: 1;
+    min-width: 0;
     color: var(--fg-1);
     font-size: 11.5px;
     font-weight: 500;
@@ -234,6 +204,19 @@ body, #root {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.render-open {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--fg-3);
+    display: inline-flex;
+    flex: 0 0 auto;
+    padding: 1px 3px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
+}
+.render-open:hover { color: var(--cool-300); background: var(--bg-3); }
 .render-sub { color: var(--fg-3); font: 10px/1.4 var(--font-mono); }
 
 .render-del {

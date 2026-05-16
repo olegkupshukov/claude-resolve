@@ -76,7 +76,7 @@ function RenderCard({ parsed, config }) {
                 <div className="specs">
                     <span className="spec"><b>{config.width}×{config.height}</b></span>
                     <span className="spec">{config.fps} fps</span>
-                    <span className="spec alpha">ProRes 4444 · α</span>
+                    <span className="spec alpha">ProRes 4444</span>
                 </div>
                 <RenderMovAction parsed={parsed} />
             </div>

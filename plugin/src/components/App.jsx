@@ -143,14 +143,13 @@ export default function App() {
         <>
             <div className="accent-strip" />
             <TitleBar />
-            <div className={'body' + (sidebarOpen ? '' : ' collapsed')}>
-                <Sidebar
-                    collapsed={!sidebarOpen}
-                    config={config}
-                    onConfigChange={handleConfigChange}
-                    onExpand={() => applySidebar(true)}
-                    updateAvailable={updateAvailable}
-                />
+            <div className={'body' + (sidebarOpen ? ' sidebar-open' : '')}>
+                {sidebarOpen && (
+                    <Sidebar
+                        config={config}
+                        onConfigChange={handleConfigChange}
+                    />
+                )}
                 <div className="main">
                     {showWelcome ? (
                         <WelcomeScreen

@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('overlayAPI', {
     },
     listRenders: () => ipcRenderer.invoke('renders:list'),
     deleteRender: (name) => ipcRenderer.invoke('renders:delete', name),
+    revealRender: (name) => ipcRenderer.invoke('renders:reveal', name),
     deleteAllRenders: () => ipcRenderer.invoke('renders:deleteAll'),
     syncToMediaPool: () => ipcRenderer.invoke('renders:syncToMediaPool')
 });

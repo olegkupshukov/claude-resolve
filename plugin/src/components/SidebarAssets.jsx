@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Sync } from './Icons';
+import { Sync, Folder } from './Icons';
 import { hashGradient } from '../utils/hashGradient';
 
-export default function SidebarAssets({ isOpen }) {
+export default function SidebarAssets() {
     const [renders, setRenders] = useState([]);
     const [syncStatus, setSyncStatus] = useState(null);
 
-    useEffect(() => {
-        if (isOpen) refreshRenders();
-    }, [isOpen]);
+    useEffect(() => { refreshRenders(); }, []);
 
     async function refreshRenders() {
         setRenders(await window.overlayAPI.listRenders());
@@ -22,6 +20,10 @@ export default function SidebarAssets({ isOpen }) {
     async function handleDeleteAllRenders() {
         await window.overlayAPI.deleteAllRenders();
         refreshRenders();
+    }
+
+    function handleReveal(name) {
+        window.overlayAPI.revealRender(name);
     }
 
     async function handleSync() {
@@ -59,7 +61,16 @@ export default function SidebarAssets({ isOpen }) {
                                 ? <img className="render-thumb" src={r.thumbnail} alt="" />
                                 : <div className="render-thumb" style={{ background: hashGradient(r.name) }} />}
                             <div className="render-meta">
-                                <div className="render-name">{r.name}</div>
+                                <div className="render-name-row">
+                                    <span className="render-name">{r.name}</span>
+                                    <button
+                                        className="render-open"
+                                        title="Open folder"
+                                        onClick={() => handleReveal(r.name)}
+                                    >
+                                        <Folder />
+                                    </button>
+                                </div>
                                 <div className="render-sub">{(r.size / 1048576).toFixed(1)} MB</div>
                             </div>
                             <button
