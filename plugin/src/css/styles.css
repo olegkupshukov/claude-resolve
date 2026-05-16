@@ -671,9 +671,8 @@ body, #root {
 }
 .card-play {
     position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    right: 10px;
+    bottom: 10px;
     width: 28px;
     height: 28px;
     border-radius: 50%;
@@ -687,7 +686,10 @@ body, #root {
     cursor: pointer;
     transition: transform .25s var(--ease-spring), background .2s ease;
 }
-.card-play:hover { transform: translate(-50%, -50%) scale(1.08); background: rgba(0, 0, 0, .7); }
+.card-play:hover { transform: scale(1.08); background: rgba(0, 0, 0, .7); }
+/* ▶ reads left-of-center: the triangle's mass sits left of its glyph
+   box center, so nudge it right. ⏸ is symmetric and gets no nudge. */
+.card-play.play-glyph { padding-left: 4px; }
 
 .card-foot {
     display: flex;

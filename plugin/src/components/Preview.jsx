@@ -173,7 +173,10 @@ const HTMLPreview = memo(function HTMLPreview({ parsed }) {
                 style={{ transform: `scale(${scale})` }}
             />
             {parsed.mode !== 'realtime' && (
-                <button className="card-play" onClick={togglePlay}>
+                <button
+                    className={'card-play' + (isPlaying ? '' : ' play-glyph')}
+                    onClick={togglePlay}
+                >
                     {isPlaying ? '⏸' : '▶'}
                 </button>
             )}
