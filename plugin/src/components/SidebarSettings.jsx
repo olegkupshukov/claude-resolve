@@ -96,6 +96,7 @@ export default function SidebarSettings({ config, onConfigChange }) {
                 >
                     <option value="1920x1080">1920 × 1080</option>
                     <option value="3840x2160">3840 × 2160</option>
+                    <option value="1080x1920">1080 × 1920 (vertical)</option>
                 </select>
             </div>
 
