@@ -2,7 +2,7 @@ const { spawn, exec, execSync } = require('child_process');
 const path = require('path');
 const { handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline } = require('./resolve');
 const { readConfig } = require('./config');
-const { CLAUDE_PATH, isMac } = require('./paths');
+const { CLAUDE_PATH, ENV, isMac } = require('./paths');
 
 const MODEL_IDS = {
     sonnet: 'claude-sonnet-4-20250514',
@@ -33,7 +33,8 @@ function spawnClaude() {
         '--no-session-persistence'
     ], {
         shell: true,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: ENV
     });
 
     const proc = claudeProcess;
@@ -457,12 +458,12 @@ function cleanupClaude() {
 
 function handleCheckAuth() {
     try {
-        execSync(`"${CLAUDE_PATH}" --version`, { encoding: 'utf-8', shell: true, timeout: 10000 });
+        execSync(`"${CLAUDE_PATH}" --version`, { encoding: 'utf-8', shell: true, timeout: 10000, env: ENV });
     } catch {
         return { status: 'not-installed' };
     }
     try {
-        execSync(`"${CLAUDE_PATH}" auth status`, { encoding: 'utf-8', shell: true, timeout: 10000 });
+        execSync(`"${CLAUDE_PATH}" auth status`, { encoding: 'utf-8', shell: true, timeout: 10000, env: ENV });
         return { status: 'ready' };
     } catch {
         return { status: 'not-logged-in' };

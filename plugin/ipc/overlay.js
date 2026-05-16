@@ -3,29 +3,17 @@ const path = require('path');
 const os = require('os');
 const { pathToFileURL } = require('url');
 const { shell } = require('electron');
-const { spawn, execSync } = require('child_process');
+const { spawn } = require('child_process');
 const { getResolve, getCurrentProject } = require('./resolve');
 const { readConfig } = require('./config');
 const {
+    findExecutable,
     RENDER_DIR, THUMBNAIL_DIR,
     PYTHON_CANDIDATES, PYTHON_VERIFY_CMD,
     FFMPEG_CANDIDATES, FFMPEG_VERIFY_CMD
 } = require('./paths');
 
-// Resolve executable paths at load time — Resolve's Electron may have a stripped PATH
-function findExecutable(candidates, verifyCmd) {
-    // Try shell lookup first (inherits system PATH)
-    try {
-        const found = execSync(verifyCmd, { encoding: 'utf-8', shell: true }).trim();
-        if (found && fs.existsSync(found)) return found;
-    } catch (_e) { /* continue to candidates */ }
-    // Try known install locations
-    for (const p of candidates) {
-        if (fs.existsSync(p)) return p;
-    }
-    return candidates[0]; // last resort
-}
-
+// Resolve executable paths at load time — Resolve's Electron has a stripped PATH
 const PYTHON_PATH = findExecutable(PYTHON_CANDIDATES, PYTHON_VERIFY_CMD);
 const FFMPEG_PATH = findExecutable(FFMPEG_CANDIDATES, FFMPEG_VERIFY_CMD);
 
