@@ -1,4 +1,4 @@
-/* Claude Resolve — design tokens (single source of truth).
+/* Resolve AI — design tokens (single source of truth).
    Every color and size literal lives here; styles.css references var() only.
    Palette derived from the brand icon (warm orange → amber → green → teal). */
 
@@ -175,5 +175,5 @@
     --duration-slow:   320ms;
 
     /* ───────────── Layout ───────────── */
-    --sidebar-width: 220px;
+    --sidebar-width: 360px;
 }

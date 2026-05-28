@@ -56,7 +56,7 @@ window.addEventListener('load', function() {
 
 const REPLAY_BUFFER_MS = 500;
 
-const HTMLPreview = memo(function HTMLPreview({ parsed }) {
+const HTMLPreview = memo(function HTMLPreview({ parsed, selectedAssetIds }) {
     const iframeRef = useRef(null);
     const containerRef = useRef(null);
     const [scale, setScale] = useState(1);
@@ -65,6 +65,7 @@ const HTMLPreview = memo(function HTMLPreview({ parsed }) {
     const [replayKey, setReplayKey] = useState(0);
     const [loopDuration, setLoopDuration] = useState(null);
     const [isVisible, setIsVisible] = useState(true);
+    const [resolvedHtml, setResolvedHtml] = useState(parsed.html);
     const wasOffscreenRef = useRef(false);
 
     useEffect(() => {
@@ -72,10 +73,22 @@ const HTMLPreview = memo(function HTMLPreview({ parsed }) {
     }, [bundle]);
 
     useEffect(() => {
+        let alive = true;
+        if (!window.assetAPI?.resolveHtml) {
+            setResolvedHtml(parsed.html);
+            return undefined;
+        }
+        window.assetAPI.resolveHtml(parsed.html, selectedAssetIds || [], { inlineDataUrls: true })
+            .then(html => { if (alive) setResolvedHtml(html || parsed.html); })
+            .catch(() => { if (alive) setResolvedHtml(parsed.html); });
+        return () => { alive = false; };
+    }, [parsed.html, selectedAssetIds]);
+
+    useEffect(() => {
         // Bump on new HTML and on bundle availability so the iframe is
         // re-mounted with the proper srcdoc once the UMDs/fonts arrive.
         if (bundle) setReplayKey(k => k + 1);
-    }, [parsed.html, bundle]);
+    }, [resolvedHtml, bundle]);
 
     useEffect(() => {
         function updateScale() {
@@ -139,7 +152,7 @@ const HTMLPreview = memo(function HTMLPreview({ parsed }) {
     const srcdoc = useMemo(() => {
         if (!bundle) return '<!DOCTYPE html><html><body style="margin:0;background:#000"></body></html>';
 
-        let html = parsed.html;
+        let html = resolvedHtml;
         const headInjections = [];
         headInjections.push(bundle.fonts);
         if (parsed.mode === 'realtime') {
@@ -152,7 +165,7 @@ const HTMLPreview = memo(function HTMLPreview({ parsed }) {
             html = injectBeforeBodyClose(html, FRAME_PLAY_SCRIPT);
         }
         return html;
-    }, [parsed, bundle]);
+    }, [parsed, resolvedHtml, bundle]);
 
     function togglePlay() {
         const next = !isPlaying;
@@ -184,6 +197,6 @@ const HTMLPreview = memo(function HTMLPreview({ parsed }) {
     );
 });
 
-export default function Preview({ parsed }) {
-    return <HTMLPreview parsed={parsed} />;
+export default function Preview({ parsed, selectedAssetIds }) {
+    return <HTMLPreview parsed={parsed} selectedAssetIds={selectedAssetIds} />;
 }

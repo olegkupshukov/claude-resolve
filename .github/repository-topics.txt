@@ -1,0 +1,9 @@
+davinci-resolve
+motion-graphics
+ai-video
+codex
+claude
+electron
+video-generation
+workflow-integration
+creator-tools

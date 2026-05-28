@@ -1,5 +1,5 @@
 /*
- * Claude Resolve — Playwright .mov Renderer
+ * Resolve AI — Playwright .mov Renderer
  *
  * Pre-loads via page.addInitScript (before any HTML <script>):
  *   - window.React, window.ReactDOM (React 18 UMD)

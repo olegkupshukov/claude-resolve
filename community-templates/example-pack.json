@@ -1,0 +1,21 @@
+{
+  "id": "example-community-pack",
+  "name": "Example Community Pack",
+  "templates": [
+    {
+      "id": "example-creator-intro",
+      "name": "Example Creator Intro",
+      "title": "Example Creator Intro",
+      "category": "creator",
+      "tags": ["intro", "title"],
+      "prompt": "Create a clean creator intro with bold typography and a polished final hold.",
+      "html": "<!DOCTYPE html><html><body><div id=\"stage\"><h1>Creator Intro</h1></div><script>window.getAnimationDuration=()=>4;window.renderFrame=()=>{};</script></body></html>",
+      "thumbnail": "example://creator-intro",
+      "preview": "example://creator-intro",
+      "fps": 25,
+      "width": 1920,
+      "height": 1080,
+      "createdBy": "Community"
+    }
+  ]
+}

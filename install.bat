@@ -1,5 +1,5 @@
 @echo off
-REM Claude Resolve installer launcher.
+REM Resolve AI installer launcher.
 REM Elevates to administrator, then hands off to install.ps1.
 
 net session >nul 2>&1

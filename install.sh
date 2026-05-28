@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Resolve - macOS installer.
+# Resolve AI - macOS installer.
 set -u
 
 # Resolve our own location, then drop root if launched via sudo: Node/npm
@@ -61,7 +61,7 @@ gradient_bar() {
 print_header() {
     echo
     printf '%s      \\  |  /%s\n' "$WARM" "$RESET"
-    printf '%s   ---%s %s( * )%s %s---%s    %sClaude Resolve%s\n' \
+    printf '%s   ---%s %s( * )%s %s---%s    %sResolve AI%s\n' \
         "$WARM" "$RESET" "$AMBER" "$RESET" "$WARM" "$RESET" "$WHITE" "$RESET"
     printf '%s      /  |  \\%s       %sAI motion graphics for DaVinci Resolve%s\n' \
         "$WARM" "$RESET" "$DIM" "$RESET"
@@ -87,7 +87,7 @@ fail() {
 
 print_success() {
     local inner=46
-    local text="Claude Resolve installed successfully"
+    local text="Resolve AI installed successfully"
     local rule; rule="$(printf '─%.0s' $(seq 1 $inner))"
     local vis=$(( 3 + 1 + 2 + ${#text} ))
     local pad=$(( inner - vis ))
@@ -98,7 +98,7 @@ print_success() {
     printf '%s  ╰%s╯%s\n' "$TEAL" "$rule" "$RESET"
     echo
     printf '       %sRestart DaVinci Resolve, then open it from:%s\n' "$DIM" "$RESET"
-    printf '       %sWorkspace > Workflow Integration > Claude Resolve%s\n' "$WHITE" "$RESET"
+    printf '       %sWorkspace > Workflow Integration > Resolve AI%s\n' "$WHITE" "$RESET"
     echo
 }
 
@@ -195,22 +195,60 @@ if [ "$(node_major)" -lt 18 ]; then
 fi
 ok "Node.js $(node --version)"
 
-# 3 - Claude Code CLI
-step 3 'Checking Claude Code CLI'
+# 3 - AI CLI
+step 3 'Checking AI CLI'
+have_claude=0
+have_codex=0
 if command -v claude >/dev/null 2>&1; then
+    have_claude=1
     ok 'Claude Code CLI present.'
-else
-    warn 'Claude Code CLI not found - installing via npm...'
-    if npm install -g @anthropic-ai/claude-code; then
-        ok 'Claude Code CLI installed.'
+fi
+if command -v codex >/dev/null 2>&1; then
+    have_codex=1
+    ok 'OpenAI Codex CLI present.'
+fi
+if [ "$have_claude" -eq 0 ] && [ "$have_codex" -eq 0 ]; then
+    warn 'No supported AI CLI found.'
+    printf '       %sChoose an AI CLI to install:%s\n' "$DIM" "$RESET"
+    printf '       %s[1] OpenAI Codex CLI (recommended)%s\n' "$WHITE" "$RESET"
+    printf '       %s[2] Claude Code CLI%s\n' "$WHITE" "$RESET"
+    printf '       %s[S] Skip for now%s\n' "$DIM" "$RESET"
+    printf '       Selection: '
+    read -r choice
+    choice="$(printf '%s' "${choice:-1}" | tr '[:upper:]' '[:lower:]')"
+    if [ "$choice" = "2" ]; then
+        warn 'Installing Claude Code CLI via npm...'
+        install_pkg='@anthropic-ai/claude-code'
+    elif [ "$choice" = "s" ]; then
+        install_pkg=''
+        warn 'Skipping AI CLI install. Install later with: npm install -g @openai/codex'
     else
-        warn 'Automatic install failed. Install it manually: npm install -g @anthropic-ai/claude-code'
+        warn 'Installing OpenAI Codex CLI via npm...'
+        install_pkg='@openai/codex'
+    fi
+
+    if [ -n "$install_pkg" ] && npm install -g "$install_pkg"; then
+        if [ "$install_pkg" = "@anthropic-ai/claude-code" ]; then
+            have_claude=1
+            ok 'Claude Code CLI installed.'
+        else
+            have_codex=1
+            ok 'OpenAI Codex CLI installed.'
+        fi
+    elif [ -n "$install_pkg" ]; then
+        warn 'Automatic install failed. Install manually: npm install -g @openai/codex or npm install -g @anthropic-ai/claude-code'
     fi
 fi
-if [ -f "$HOME/.claude/.credentials.json" ]; then
-    ok 'Claude Code is logged in.'
+if [ "$have_claude" -eq 1 ] && [ -f "$HOME/.claude/.credentials.json" ]; then
+    ok 'Claude Code appears logged in.'
+elif [ "$have_codex" -eq 1 ]; then
+    if codex login status >/dev/null 2>&1; then
+        ok 'OpenAI Codex CLI appears logged in.'
+    else
+        warn 'OpenAI Codex CLI installed but not logged in - run codex login in terminal.'
+    fi
 else
-    warn 'Claude Code installed but not logged in - run claude in terminal to log in.'
+    warn 'Install or log in to at least one provider: claude login or codex login.'
 fi
 
 # 4 - Renderer dependencies
@@ -219,6 +257,16 @@ if ! ( cd "$RENDERER_SRC" && npm install --no-audit --no-fund ); then
     fail 'npm install failed in plugin/renderer.'
 fi
 ok 'Renderer dependencies installed.'
+
+if [ ! -f "$PLUGIN_SRC/dist/index.html" ]; then
+    warn 'Plugin UI bundle missing - building plugin/dist...'
+    if ! ( cd "$PLUGIN_SRC" && npm install --no-audit --no-fund && npm run build ); then
+        fail 'Could not build plugin UI. From the repo root run: npm --prefix plugin install && npm --prefix plugin run build, then re-run the installer.'
+    fi
+    ok 'Plugin UI bundle built.'
+else
+    ok 'Plugin UI bundle present.'
+fi
 
 # 5 - Chromium
 step 5 'Downloading Playwright Chromium'
@@ -247,7 +295,7 @@ ok "Installed to $DEST"
 
 # 8 - Verify
 step 8 'Verifying installation'
-for rel in manifest.xml main.js dist/index.html renderer/render.js renderer/node_modules/playwright; do
+for rel in manifest.xml main.js data/builtin-template-packs.json ipc/assets.js ipc/agent.js ipc/agent-logs.js ipc/captions.js ipc/codex.js ipc/codex-parser.js ipc/codex-stderr-filter.js ipc/render-validation.js ipc/repair.js ipc/showcase.js ipc/template-packs.js ipc/templates.js dist/index.html renderer/render.js renderer/node_modules/playwright; do
     if [ ! -e "$DEST/$rel" ]; then
         fail "Verification failed - missing: $rel"
     fi

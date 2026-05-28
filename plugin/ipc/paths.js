@@ -1,4 +1,4 @@
-// Platform-aware paths for Claude Resolve plugin.
+// Platform-aware paths for Resolve AI.
 // Centralizes Windows ↔ macOS path differences and executable resolution.
 
 const os = require('os');
@@ -11,7 +11,7 @@ const isMac = process.platform === 'darwin';
 // Base application-support directory (APPDATA equivalent on macOS)
 const APP_SUPPORT = isMac
     ? path.join(os.homedir(), 'Library', 'Application Support')
-    : process.env.APPDATA;
+    : (process.env.APPDATA || path.join(os.homedir(), '.resolve-ai'));
 
 const RESOLVE_DATA = path.join(APP_SUPPORT, 'Blackmagic Design', 'DaVinci Resolve');
 
@@ -23,6 +23,9 @@ const THUMBNAIL_DIR = path.join(RENDER_DIR, 'thumbnails');
 
 // Plugin config directory
 const CONFIG_DIR = path.join(RESOLVE_DATA, 'Claude Resolve');
+
+// User-provided images/SVGs copied into local Resolve AI storage.
+const ASSET_DIR = path.join(CONFIG_DIR, 'assets');
 
 // Resolve an executable: try a shell lookup first (inherits whatever PATH
 // the lookup shell has), then known install locations. Falls back to the
@@ -41,9 +44,9 @@ function findExecutable(candidates, verifyCmd) {
     return candidates[0]; // last resort
 }
 
-// ── Claude Code CLI ──────────────────────────────────────────────
+// ── Agent CLIs ───────────────────────────────────────────────────
 // DaVinci Resolve is a launchd GUI app: it never inherits the user's
-// terminal PATH, so a bare `claude` lookup fails on macOS. Resolve an
+// terminal PATH, so a bare CLI lookup fails on macOS. Resolve an
 // absolute path from known locations, plus a login+interactive shell
 // (`zsh -lic`) which sources the user's rc files and so sees nvm / fnm /
 // Homebrew installs the static list can't enumerate.
@@ -57,11 +60,40 @@ const CLAUDE_CANDIDATES = [
 ];
 const CLAUDE_VERIFY_CMD = "zsh -lic 'command -v claude' 2>/dev/null";
 
+const CODEX_CANDIDATES = isMac
+    ? [
+        '/usr/local/bin/codex',
+        '/opt/homebrew/bin/codex',
+        path.join(os.homedir(), '.codex', 'local', 'codex'),
+        path.join(os.homedir(), '.npm-global', 'bin', 'codex'),
+        path.join(os.homedir(), '.bun', 'bin', 'codex'),
+        'codex'
+    ]
+    : [
+        path.join(process.env.APPDATA || '', 'npm', 'codex.cmd'),
+        path.join(process.env.APPDATA || '', 'npm', 'codex'),
+        'codex.cmd',
+        'codex'
+    ];
+const CODEX_VERIFY_CMD = isMac ? "zsh -lic 'command -v codex' 2>/dev/null" : 'where codex';
+
 // Windows keeps the known npm install path (GUI apps inherit a usable PATH
 // and %APPDATA% there). Only macOS needs the resolver.
 const CLAUDE_PATH = isMac
     ? findExecutable(CLAUDE_CANDIDATES, CLAUDE_VERIFY_CMD)
     : path.join(process.env.APPDATA || '', 'npm', 'claude.cmd');
+
+function findCodexPath() {
+    const found = findExecutable(CODEX_CANDIDATES, CODEX_VERIFY_CMD);
+    if (isMac || /\.(cmd|exe)$/i.test(found)) return found;
+    for (const ext of ['.cmd', '.exe']) {
+        const candidate = found + ext;
+        if (fs.existsSync(candidate)) return candidate;
+    }
+    return found;
+}
+
+const CODEX_PATH = findCodexPath();
 
 // Augmented environment for spawning the CLI. On macOS the launchd PATH is
 // stripped down to /usr/bin:/bin:/usr/sbin:/sbin — prepend the resolved
@@ -70,8 +102,10 @@ const CLAUDE_PATH = isMac
 function buildEnv() {
     if (!isMac) return process.env;
     const claudeDir = path.dirname(CLAUDE_PATH);
+    const codexDir = path.dirname(CODEX_PATH);
     const prepend = [
         (claudeDir && claudeDir !== '.') ? claudeDir : null,
+        (codexDir && codexDir !== '.') ? codexDir : null,
         '/usr/local/bin',
         '/opt/homebrew/bin'
     ].filter(Boolean);
@@ -102,10 +136,12 @@ module.exports = {
     isMac,
     findExecutable,
     CLAUDE_PATH,
+    CODEX_PATH,
     ENV,
     RENDER_DIR,
     THUMBNAIL_DIR,
     CONFIG_DIR,
+    ASSET_DIR,
     FFMPEG_CANDIDATES,
     FFMPEG_VERIFY_CMD
 };

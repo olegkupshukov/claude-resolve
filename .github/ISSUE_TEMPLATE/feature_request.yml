@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest a creator workflow or integration.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Creator workflow
+      description: What video/editing workflow would this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should Resolve AI do?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Providers
+        - Templates / Gallery
+        - Captions
+        - Assets / Brand Kit
+        - Rendering
+        - Resolve timeline integration
+        - Installer / onboarding
+        - Documentation

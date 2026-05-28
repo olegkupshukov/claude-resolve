@@ -1,0 +1,24 @@
+name: Template submission
+description: Submit or propose a neutral creator template pack.
+title: "[Template]: "
+labels: ["template"]
+body:
+  - type: input
+    id: pack
+    attributes:
+      label: Pack name
+      placeholder: Creator Essentials
+    validations:
+      required: true
+  - type: textarea
+    id: templates
+    attributes:
+      label: Templates included
+      description: List template names, categories, and intended use cases.
+    validations:
+      required: true
+  - type: textarea
+    id: preview
+    attributes:
+      label: Preview
+      description: Add screenshots, GIFs, or a link to a branch/PR.

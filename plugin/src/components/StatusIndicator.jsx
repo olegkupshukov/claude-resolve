@@ -18,9 +18,18 @@ function shortPath(p) {
     return name.length > 24 ? name.slice(0, 21) + '...' : name;
 }
 
-const MODEL_LABELS = { sonnet: 'Sonnet', opus: 'Opus' };
+const MODEL_LABELS = {
+    sonnet: 'Sonnet',
+    opus: 'Opus',
+    default: 'Codex default',
+    'gpt-5.3-codex': 'GPT-5.3 Codex',
+    'gpt-5.4-mini': 'GPT-5.4 Mini',
+    'gpt-5.5': 'GPT-5.5'
+};
 
-export default function StatusIndicator({ tool, tokens, model }) {
+const PROVIDER_LABELS = { auto: 'Auto', claude: 'Claude', codex: 'Codex' };
+
+export default function StatusIndicator({ tool, tokens, model, provider }) {
     const [elapsed, setElapsed] = useState(0);
     const startRef = useRef(Date.now());
 
@@ -34,6 +43,7 @@ export default function StatusIndicator({ tool, tokens, model }) {
 
     const parts = ['Thinking'];
     if (elapsed > 0) parts.push(`${elapsed}s`);
+    if (provider) parts.push(PROVIDER_LABELS[provider] || provider);
     if (tokens > 0) parts.push(`${tokens} tokens`);
     if (model) parts.push(MODEL_LABELS[model] || model);
     if (tool) {

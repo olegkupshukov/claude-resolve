@@ -1,7 +1,7 @@
 {
   "name": "claude-resolve-renderer",
   "version": "0.5.0-beta",
-  "description": "Playwright .mov renderer for the Claude Resolve plugin",
+  "description": "Playwright .mov renderer for the Resolve AI plugin",
   "private": true,
   "main": "render.js",
   "dependencies": {

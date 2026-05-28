@@ -1,15 +1,24 @@
-// Claude Resolve — Main Process
+// Resolve AI — Main Process
 // Sandboxed Electron app loaded by DaVinci Resolve as a Workflow Integration Plugin.
 // IPC handlers are split into ipc/ modules.
 
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const { setupResolveHandlers } = require('./ipc/resolve');
-const { setupClaudeHandlers, cleanupClaude } = require('./ipc/claude');
+const { setupClaudeHandlers } = require('./ipc/claude');
+const { setupAgentHandlers, cleanupAgent } = require('./ipc/agent');
 const { setupOverlayHandlers } = require('./ipc/overlay');
 const { setupConfigHandlers } = require('./ipc/config');
+const { setupTemplateHandlers } = require('./ipc/templates');
+const { setupAssetHandlers } = require('./ipc/assets');
+const { setupTemplatePackHandlers } = require('./ipc/template-packs');
+const { setupCaptionHandlers } = require('./ipc/captions');
+const { setupShowcaseHandlers } = require('./ipc/showcase');
 const { setupUpdateHandlers } = require('./ipc/updates');
 const { setupPreviewHandlers } = require('./ipc/preview');
+const { setupTimelineHandlers } = require('./ipc/timeline');
+const { setupVariationHandlers } = require('./ipc/variations');
+const { setupDebugHandlers } = require('./ipc/debug');
 
 let mainWindow = null;
 
@@ -26,7 +35,7 @@ function createWindow() {
     });
 
     mainWindow.on('close', () => {
-        cleanupClaude();
+        cleanupAgent();
         app.quit();
     });
     mainWindow.loadFile('dist/index.html');
@@ -36,10 +45,19 @@ app.whenReady().then(async () => {
     createWindow();
     setupResolveHandlers(ipcMain);
     setupClaudeHandlers(ipcMain, mainWindow);
+    setupAgentHandlers(ipcMain, mainWindow);
     setupOverlayHandlers(ipcMain, mainWindow);
     setupConfigHandlers(ipcMain);
-    setupUpdateHandlers(ipcMain);
-    setupPreviewHandlers(ipcMain);
+    setupTemplateHandlers(ipcMain);
+    setupAssetHandlers(ipcMain);
+    setupTemplatePackHandlers(ipcMain);
+setupCaptionHandlers(ipcMain);
+setupShowcaseHandlers(ipcMain);
+setupUpdateHandlers(ipcMain);
+setupPreviewHandlers(ipcMain);
+setupTimelineHandlers(ipcMain);
+setupVariationHandlers(ipcMain);
+setupDebugHandlers(ipcMain);
     ipcMain.handle('window:resize', (_event, { width, height }) => {
         mainWindow.setSize(width, height);
     });

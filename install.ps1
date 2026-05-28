@@ -1,6 +1,6 @@
 #Requires -Version 5.1
 <#
-  Claude Resolve - Windows installer.
+  Resolve AI - Windows installer.
   Launched by install.bat (which elevates) or run directly from an
   elevated PowerShell prompt.
 #>
@@ -78,7 +78,7 @@ function Show-Header {
     Write-Host '   ---' -ForegroundColor DarkYellow -NoNewline
     Write-Host ' ( * ) ' -ForegroundColor Yellow -NoNewline
     Write-Host '---' -ForegroundColor DarkYellow -NoNewline
-    Write-Host '    Claude Resolve' -ForegroundColor White
+    Write-Host '    Resolve AI' -ForegroundColor White
     Write-Host '      /  |  \' -ForegroundColor DarkYellow -NoNewline
     Write-Host '       AI motion graphics for DaVinci Resolve' -ForegroundColor DarkGray
     Write-Host ''
@@ -120,7 +120,7 @@ function Show-Success {
     $inner = 46
     $top = "  $BTL" + ($BH.ToString() * $inner) + $BTR
     $bot = "  $BBL" + ($BH.ToString() * $inner) + $BBR
-    $text = "Claude Resolve installed successfully"
+    $text = "Resolve AI installed successfully"
     $pad = $inner - ($text.Length + 6)        # 6 = "  OK  " spacing
     $teal = GradientAt 1.0
 
@@ -135,7 +135,7 @@ function Show-Success {
     Write-Host (Tint $teal $bot)
     Write-Host ''
     Write-Host '       Restart DaVinci Resolve, then open it from:' -ForegroundColor Gray
-    Write-Host '       Workspace > Workflow Integration > Claude Resolve' -ForegroundColor White
+    Write-Host '       Workspace > Workflow Integration > Resolve AI' -ForegroundColor White
     Write-Host ''
 }
 
@@ -273,28 +273,66 @@ if ($nodeMajor -lt 18) {
 $nodeVer = (& node --version).Trim()
 Ok "Node.js $nodeVer"
 
-# 3 - Claude Code CLI
-Step 3 'Checking Claude Code CLI'
+# 3 - AI CLI
+Step 3 'Checking AI CLI'
 $haveClaude = [bool](Get-Command claude -ErrorAction SilentlyContinue)
 if (-not $haveClaude -and (Test-Path (Join-Path $env:APPDATA 'npm\claude.cmd'))) {
     $haveClaude = $true
 }
-if (-not $haveClaude) {
-    Warn 'Claude Code CLI not found - installing via npm...'
-    & npm install -g '@anthropic-ai/claude-code'
-    if ($LASTEXITCODE -ne 0) {
-        Warn 'Automatic install failed. Install it manually: npm install -g @anthropic-ai/claude-code'
+$haveCodex = [bool](Get-Command codex -ErrorAction SilentlyContinue)
+if (-not $haveCodex -and (Test-Path (Join-Path $env:APPDATA 'npm\codex.cmd'))) {
+    $haveCodex = $true
+}
+if (-not $haveClaude -and -not $haveCodex) {
+    Warn 'No supported AI CLI found.'
+    Write-Host '       Choose an AI CLI to install:' -ForegroundColor Gray
+    Write-Host '       [1] OpenAI Codex CLI (recommended)' -ForegroundColor White
+    Write-Host '       [2] Claude Code CLI' -ForegroundColor White
+    Write-Host '       [S] Skip for now' -ForegroundColor Gray
+    $choice = (Read-Host '       Selection').Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($choice)) { $choice = '1' }
+    $installAttempted = $false
+
+    if ($choice -eq '2') {
+        Warn 'Installing Claude Code CLI via npm...'
+        $installAttempted = $true
+        & npm install -g '@anthropic-ai/claude-code'
+    } elseif ($choice -eq 's') {
+        Warn 'Skipping AI CLI install. Install later with: npm install -g @openai/codex'
     } else {
+        Warn 'Installing OpenAI Codex CLI via npm...'
+        $installAttempted = $true
+        & npm install -g '@openai/codex'
+    }
+
+    if ($installAttempted -and $LASTEXITCODE -ne 0) {
+        Warn 'Automatic install failed. Install manually: npm install -g @openai/codex or npm install -g @anthropic-ai/claude-code'
+    } elseif ($choice -eq '2') {
         Ok 'Claude Code CLI installed.'
         $haveClaude = $true
+    } elseif ($choice -ne 's') {
+        Ok 'OpenAI Codex CLI installed.'
+        $haveCodex = $true
     }
 } else {
-    Ok 'Claude Code CLI present.'
+    if ($haveClaude) { Ok 'Claude Code CLI present.' }
+    if ($haveCodex) { Ok 'OpenAI Codex CLI present.' }
 }
-if (Test-Path (Join-Path $env:USERPROFILE '.claude\.credentials.json')) {
-    Ok 'Claude Code is logged in.'
+if ($haveClaude -and (Test-Path (Join-Path $env:USERPROFILE '.claude\.credentials.json'))) {
+    Ok 'Claude Code appears logged in.'
+} elseif ($haveCodex) {
+    try {
+        & codex login status *> $null
+        if ($LASTEXITCODE -eq 0) {
+            Ok 'OpenAI Codex CLI appears logged in.'
+        } else {
+            Warn 'OpenAI Codex CLI installed but not logged in - run codex login in terminal.'
+        }
+    } catch {
+        Warn 'OpenAI Codex CLI installed but login status could not be checked - run codex login in terminal.'
+    }
 } else {
-    Warn 'Claude Code installed but not logged in - run claude in terminal to log in.'
+    Warn 'Install or log in to at least one provider: claude login or codex login.'
 }
 
 # 4 - Renderer dependencies
@@ -305,6 +343,27 @@ $exit = $LASTEXITCODE
 Pop-Location
 if ($exit -ne 0) { Fail 'npm install failed in plugin\renderer.' }
 Ok 'Renderer dependencies installed.'
+
+$distIndex = Join-Path $PluginSrc 'dist\index.html'
+if (-not (Test-Path $distIndex)) {
+    Warn 'Plugin UI bundle missing - building plugin\dist...'
+    Push-Location $PluginSrc
+    & npm install --no-audit --no-fund
+    $installExit = $LASTEXITCODE
+    if ($installExit -eq 0) {
+        & npm run build
+        $buildExit = $LASTEXITCODE
+    } else {
+        $buildExit = $installExit
+    }
+    Pop-Location
+    if ($buildExit -ne 0 -or -not (Test-Path $distIndex)) {
+        Fail 'Could not build plugin UI. From the repo root run: npm --prefix plugin install; npm --prefix plugin run build; then re-run the installer.'
+    }
+    Ok 'Plugin UI bundle built.'
+} else {
+    Ok 'Plugin UI bundle present.'
+}
 
 # 5 - Chromium
 Step 5 'Downloading Playwright Chromium'
@@ -339,6 +398,19 @@ Step 8 'Verifying installation'
 $required = @(
     'manifest.xml',
     'main.js',
+    'data\builtin-template-packs.json',
+    'ipc\assets.js',
+    'ipc\agent.js',
+    'ipc\agent-logs.js',
+    'ipc\captions.js',
+    'ipc\codex.js',
+    'ipc\codex-parser.js',
+    'ipc\codex-stderr-filter.js',
+    'ipc\render-validation.js',
+    'ipc\repair.js',
+    'ipc\showcase.js',
+    'ipc\template-packs.js',
+    'ipc\templates.js',
     'dist\index.html',
     'renderer\render.js',
     'renderer\node_modules\playwright'

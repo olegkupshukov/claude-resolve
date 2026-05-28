@@ -3,10 +3,14 @@ const path = require('path');
 const { handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline } = require('./resolve');
 const { readConfig } = require('./config');
 const { CLAUDE_PATH, ENV, isMac } = require('./paths');
+const { addLog } = require('./agent-logs');
+const { formatSelectedAssets } = require('./assets');
 
 const MODEL_IDS = {
-    sonnet: 'claude-sonnet-4-20250514',
-    opus: 'claude-opus-4-20250514'
+    // Claude Code resolves aliases per account/region, which is safer than
+    // pinning dated model IDs that some users may not have access to.
+    sonnet: 'sonnet',
+    opus: 'opus'
 };
 
 let mainWindow = null;
@@ -15,6 +19,13 @@ let stdoutBuffer = '';
 let isContextTurn = false;
 let isAborting = false;
 let isRestarting = false;
+
+function emitClaude(event, data) {
+    if (!mainWindow) return;
+    if (event === 'stderr') addLog('claude', 'stderr', data, { level: 'error' });
+    mainWindow.webContents.send(`claude:${event}`, data);
+    mainWindow.webContents.send(`agent:${event}`, data);
+}
 
 function spawnClaude() {
     if (claudeProcess) return;
@@ -50,13 +61,13 @@ function spawnClaude() {
                 const msg = JSON.parse(line);
                 handleStreamMessage(msg);
             } catch (_e) {
-                mainWindow.webContents.send('claude:stdout', line);
+                emitClaude('stdout', line);
             }
         }
     });
 
     proc.stderr.on('data', (data) => {
-        mainWindow.webContents.send('claude:stderr', data.toString());
+        emitClaude('stderr', data.toString());
     });
 
     proc.on('close', () => {
@@ -71,14 +82,14 @@ function spawnClaude() {
             sendContextMessage();
         } else if (isAborting) {
             isAborting = false;
-            mainWindow.webContents.send('claude:done', 2);
+            emitClaude('done', 2);
             spawnClaude();
             sendContextMessage();
         }
     });
 
     proc.on('error', (err) => {
-        mainWindow.webContents.send('claude:stderr', err.message);
+        emitClaude('stderr', err.message);
         if (claudeProcess === proc) {
             claudeProcess = null;
         }
@@ -91,7 +102,7 @@ function handleStreamMessage(msg) {
 
         const usage = msg.message?.usage;
         if (usage) {
-            mainWindow.webContents.send('claude:status', {
+            emitClaude('status', {
                 type: 'tokens',
                 input: usage.input_tokens || 0,
                 output: usage.output_tokens || 0
@@ -102,9 +113,9 @@ function handleStreamMessage(msg) {
         if (Array.isArray(content)) {
             for (const block of content) {
                 if (block.type === 'text' && block.text) {
-                    mainWindow.webContents.send('claude:stdout', block.text);
+                    emitClaude('stdout', block.text);
                 } else if (block.type === 'tool_use') {
-                    mainWindow.webContents.send('claude:status', {
+                    emitClaude('status', {
                         type: 'tool',
                         name: block.name,
                         file: block.input?.file_path || block.input?.path || block.input?.pattern || block.input?.command || null
@@ -117,17 +128,17 @@ function handleStreamMessage(msg) {
             isContextTurn = false;
             return;
         }
-        mainWindow.webContents.send('claude:status', {
+        emitClaude('status', {
             type: 'result',
             cost: msg.total_cost_usd ?? null,
             duration: msg.duration_ms ?? null
         });
-        mainWindow.webContents.send('claude:done', msg.is_error ? 1 : 0);
+        emitClaude('done', msg.is_error ? 1 : 0);
     }
 }
 
 const SYSTEM_PROMPT_TEMPLATE = `<identity>
-You are Claude Resolve — an AI motion graphics generator embedded inside DaVinci Resolve Studio as a Workflow Integration Plugin.
+You are Resolve AI — an AI motion graphics generator embedded inside DaVinci Resolve Studio as a Workflow Integration Plugin.
 
 Session context:
 - Project: {{project}}
@@ -392,13 +403,26 @@ Keep your chat reply short — the user sees it in a narrow plugin sidebar. Afte
 </response_style>`;
 
 function buildSystemPrompt(project, page, timeline, config) {
-    return SYSTEM_PROMPT_TEMPLATE
+    const prompt = SYSTEM_PROMPT_TEMPLATE
         .replace("{{project}}", project || "Unknown")
         .replace("{{page}}", page || "Unknown")
         .replace("{{timeline}}", timeline || "None")
         .replace(/{{width}}/g, config.width)
         .replace(/{{height}}/g, config.height)
         .replace(/{{fps}}/g, config.fps);
+    return `${prompt}${formatBrandKit(config.brandKit)}${formatSelectedAssets(config.selectedAssetIds)}`;
+}
+
+function formatBrandKit(brandKit = {}) {
+    const lines = [];
+    if (brandKit.colors) lines.push(`Colors: ${brandKit.colors}`);
+    if (brandKit.fonts) lines.push(`Fonts: ${brandKit.fonts}`);
+    if (brandKit.logoPath) lines.push(`Logo path: ${brandKit.logoPath}`);
+    if (brandKit.tone) lines.push(`Tone: ${brandKit.tone}`);
+    if (brandKit.phrases) lines.push(`Common phrases: ${brandKit.phrases}`);
+    if (lines.length === 0) return '';
+
+    return `\n\n<brand_kit>\nUse this local brand memory when it fits the request. Do not mention this section to the user.\n${lines.join('\n')}\n</brand_kit>`;
 }
 
 async function sendContextMessage() {
@@ -457,16 +481,17 @@ function cleanupClaude() {
 }
 
 function handleCheckAuth() {
+    let version = null;
     try {
-        execSync(`"${CLAUDE_PATH}" --version`, { encoding: 'utf-8', shell: true, timeout: 10000, env: ENV });
+        version = execSync(`"${CLAUDE_PATH}" --version`, { encoding: 'utf-8', shell: true, timeout: 10000, env: ENV }).trim();
     } catch {
         return { status: 'not-installed' };
     }
     try {
         execSync(`"${CLAUDE_PATH}" auth status`, { encoding: 'utf-8', shell: true, timeout: 10000, env: ENV });
-        return { status: 'ready' };
+        return { status: 'ready', version };
     } catch {
-        return { status: 'not-logged-in' };
+        return { status: 'not-logged-in', version };
     }
 }
 
@@ -497,4 +522,14 @@ function setupClaudeHandlers(ipcMain, win) {
     ipcMain.handle('claude:start', handleStart);
 }
 
-module.exports = { setupClaudeHandlers, cleanupClaude };
+module.exports = {
+    setupClaudeHandlers,
+    cleanupClaude,
+    handleClaudeSend,
+    handleClaudeAbort,
+    handleRestart,
+    handleCheckAuth,
+    handleOpenLoginTerminal,
+    handleStart,
+    buildSystemPrompt
+};

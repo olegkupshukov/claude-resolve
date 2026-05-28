@@ -20,8 +20,8 @@ export default function TitleBar() {
 
     return (
         <div className="titlebar">
-            <div className="tb-logo" role="img" aria-label="Claude Resolve" />
-            <span className="tb-name">Claude Resolve</span>
+            <div className="tb-logo" role="img" aria-label="Resolve AI" />
+            <span className="tb-name">Resolve AI</span>
             <div className="tb-crumbs">
                 <span className="seg">{project}</span>
                 <span className="sep">/</span>

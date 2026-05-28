@@ -83,12 +83,42 @@ async function handleGetCurrentTimeline() {
     return await timeline.GetName();
 }
 
+async function handleGetTimelineSettings() {
+    const project = await getCurrentProject();
+    if (!project) return null;
+    const timeline = await project.GetCurrentTimeline();
+    if (!timeline) return null;
+
+    const getSetting = async (key) => {
+        try {
+            return await timeline.GetSetting(key);
+        } catch {
+            return null;
+        }
+    };
+
+    const [name, fps, width, height] = await Promise.all([
+        timeline.GetName(),
+        getSetting('timelineFrameRate'),
+        getSetting('timelineResolutionWidth'),
+        getSetting('timelineResolutionHeight')
+    ]);
+
+    return {
+        name,
+        fps: parseFloat(fps) || null,
+        width: parseInt(width, 10) || null,
+        height: parseInt(height, 10) || null
+    };
+}
+
 function setupResolveHandlers(ipcMain) {
     ipcMain.handle('resolve:openPage', handleOpenPage);
     ipcMain.handle('resolve:getCurrentPage', handleGetCurrentPage);
     ipcMain.handle('resolve:getProjectName', handleGetProjectName);
     ipcMain.handle('resolve:getCurrentTimeline', handleGetCurrentTimeline);
+    ipcMain.handle('resolve:getTimelineSettings', handleGetTimelineSettings);
     ipcMain.handle('resolve:cleanup', cleanupResolveInterface);
 }
 
-module.exports = { setupResolveHandlers, handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline, getResolve, getCurrentProject };
+module.exports = { setupResolveHandlers, handleGetProjectName, handleGetCurrentPage, handleGetCurrentTimeline, handleGetTimelineSettings, getResolve, getCurrentProject };
