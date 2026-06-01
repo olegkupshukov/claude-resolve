@@ -762,6 +762,15 @@ body, #root {
     text-align: left;
     cursor: default;
 }
+.btn-render.warn {
+    color: var(--color-warn);
+    background: var(--bg-warn);
+    box-shadow: none;
+    flex: 1 1 100%;        /* full-width row below the specs */
+    white-space: normal;   /* let the reason message wrap */
+    text-align: left;
+    cursor: default;
+}
 .render-progress {
     position: absolute;
     left: 0;

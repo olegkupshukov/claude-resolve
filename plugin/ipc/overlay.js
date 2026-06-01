@@ -44,8 +44,13 @@ function timecodeToFrame(tc, fps) {
 
 async function findEmptyTrack(timeline, atFrame, clipFrames) {
     const trackCount = await timeline.GetTrackCount('video');
-    // Search from V2 upward for an empty slot at playhead
+    // Search from V2 upward for an empty slot at playhead on a usable track.
+    // A locked or disabled track silently rejects AppendToTimeline, so skip those.
     for (let t = 2; t <= trackCount; t++) {
+        const locked = await timeline.GetIsTrackLocked('video', t);
+        const enabled = await timeline.GetIsTrackEnabled('video', t);
+        if (locked || !enabled) continue;
+
         const items = await timeline.GetItemListInTrack('video', t);
         if (!items || items.length === 0) return t;
         let occupied = false;
@@ -60,47 +65,88 @@ async function findEmptyTrack(timeline, atFrame, clipFrames) {
         }
         if (!occupied) return t;
     }
-    // All tracks occupied — add a new one
+    // No usable existing track (all occupied, locked, or disabled) — add one new
+    // track. A freshly added track is unlocked and enabled by default.
     await timeline.AddTrack('video');
     return trackCount + 1;
 }
 
+// Imports the rendered .mov and tries to place it on the timeline.
+// Returns a structured result instead of throwing, so the caller can tell the
+// user exactly what happened:
+//   { imported: false, placed: false, reason } — couldn't even reach the bin
+//   { imported: true,  placed: false, reason } — in the bin, not on the timeline
+//   { imported: true,  placed: true,  track  } — on the timeline
 async function importToTimeline(movPath) {
     const resolve = await getResolve();
-    if (!resolve) throw new Error('Resolve not connected');
+    if (!resolve) return { imported: false, placed: false, reason: 'Resolve is not connected' };
 
     const project = await getCurrentProject();
+    if (!project) return { imported: false, placed: false, reason: 'no project is open' };
     const mediaPool = await project.GetMediaPool();
 
-    // Import into "Claude Resolve" bin
+    // Stage 1 — import into the "Claude Resolve" bin. This must always run and
+    // succeed first, so the rendered clip is never lost even if placement fails.
     const prevFolder = await mediaPool.GetCurrentFolder();
     const bin = await findOrCreateBin(mediaPool, 'Claude Resolve');
     await mediaPool.SetCurrentFolder(bin);
     const clips = await mediaPool.ImportMedia([movPath]);
     await mediaPool.SetCurrentFolder(prevFolder);
-    if (!clips || clips.length === 0) throw new Error('Failed to import to MediaPool');
-
-    // Smart timeline placement
-    const timeline = await project.GetCurrentTimeline();
-    if (!timeline) throw new Error('No active timeline');
-
-    const tc = await timeline.GetCurrentTimecode();
-    const fpsStr = await timeline.GetSetting('timelineFrameRate');
-    const fps = parseFloat(fpsStr) || 25;
-    const playheadFrame = timecodeToFrame(tc, fps);
-
+    if (!clips || clips.length === 0) {
+        return { imported: false, placed: false, reason: 'could not import the file into the Media Pool' };
+    }
     const clip = clips[0];
-    const clipProps = await clip.GetClipProperty();
-    const clipFrames = parseInt(clipProps.Frames) || Math.round(fps * 5);
 
-    const trackIndex = await findEmptyTrack(timeline, playheadFrame, clipFrames);
+    // Stage 2 — best-effort timeline placement. Any failure here leaves the clip
+    // safely in the bin and reports imported-but-not-placed with a reason.
+    try {
+        const timeline = await project.GetCurrentTimeline();
+        if (!timeline) return { imported: true, placed: false, reason: 'no timeline is open' };
 
-    await mediaPool.AppendToTimeline([{
-        mediaPoolItem: clip,
-        trackIndex,
-        recordFrame: playheadFrame,
-        mediaType: 1
-    }]);
+        const tc = await timeline.GetCurrentTimecode();
+        const fpsStr = await timeline.GetSetting('timelineFrameRate');
+        const fps = parseFloat(fpsStr) || 25;
+        const playheadFrame = timecodeToFrame(tc, fps);
+
+        const clipProps = await clip.GetClipProperty();
+        const clipFrames = parseInt(clipProps.Frames) || Math.round(fps * 5);
+
+        const trackIndex = await findEmptyTrack(timeline, playheadFrame, clipFrames);
+
+        // Diagnostic (step 4): capture placement inputs/outputs to confirm the
+        // per-user trigger. recordFrame offset math is intentionally unchanged
+        // until a real log tells us which semantics this build uses.
+        let startFrame = null, endFrame = null;
+        try {
+            startFrame = await timeline.GetStartFrame();
+            endFrame = await timeline.GetEndFrame();
+        } catch (_e) { /* older builds may lack these getters */ }
+
+        const appended = await mediaPool.AppendToTimeline([{
+            mediaPoolItem: clip,
+            trackIndex,
+            recordFrame: playheadFrame,
+            mediaType: 1
+        }]);
+
+        const placedCount = Array.isArray(appended) ? appended.length : (appended ? 1 : 0);
+        console.log('IMPORT PLACEMENT:', JSON.stringify({
+            timecode: tc, fps, recordFrame: playheadFrame, trackIndex,
+            timelineStartFrame: startFrame, timelineEndFrame: endFrame,
+            clipFrames, appended: placedCount
+        }));
+
+        if (placedCount === 0) {
+            return {
+                imported: true,
+                placed: false,
+                reason: `Resolve rejected placement on track V${trackIndex} at frame ${playheadFrame}`
+            };
+        }
+        return { imported: true, placed: true, track: trackIndex };
+    } catch (err) {
+        return { imported: true, placed: false, reason: err.message };
+    }
 }
 
 async function handleRenderMov(_event, { html, name, fps, width, height }) {
@@ -167,10 +213,18 @@ async function handleRenderMov(_event, { html, name, fps, width, height }) {
                 return;
             }
             try {
-                await importToTimeline(movPath);
-                resolve({ success: true, path: movPath });
+                const r = await importToTimeline(movPath);
+                resolve({
+                    success: true,
+                    path: movPath,
+                    placed: r.placed,
+                    imported: r.imported,
+                    reason: r.reason || null
+                });
             } catch (err) {
-                resolve({ success: true, path: movPath, warning: 'Rendered but import failed: ' + err.message });
+                // Defensive: importToTimeline is structured and shouldn't throw,
+                // but never let an unexpected error hide a successful render.
+                resolve({ success: true, path: movPath, placed: false, imported: false, reason: err.message });
             }
         });
 

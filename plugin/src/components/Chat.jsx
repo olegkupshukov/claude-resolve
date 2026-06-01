@@ -7,6 +7,7 @@ function RenderMovAction({ parsed }) {
     const [status, setStatus] = useState(null);
     const [progress, setProgress] = useState(0);
     const [errorMsg, setErrorMsg] = useState('');
+    const [reason, setReason] = useState('');
 
     useEffect(() => {
         if (status !== 'rendering') return;
@@ -21,15 +22,26 @@ function RenderMovAction({ parsed }) {
         setStatus('rendering');
         setProgress(0);
         setErrorMsg('');
+        setReason('');
         try {
             const result = await window.overlayAPI.renderMov({
                 html: parsed.html, name: parsed.name
             });
-            if (result.success) {
-                setStatus(result.warning ? 'rendered' : 'done');
-            } else {
+            if (!result.success) {
+                // Render itself failed — file was never produced.
                 setErrorMsg(result.error || 'Unknown error');
                 setStatus('error');
+            } else if (result.placed) {
+                // Rendered and placed on the timeline.
+                setStatus('done');
+            } else if (result.imported) {
+                // Rendered and in the Media Pool, but couldn't reach the timeline.
+                setReason(result.reason || 'unknown reason');
+                setStatus('mediapool');
+            } else {
+                // Rendered to disk, but couldn't even reach the Media Pool.
+                setReason(result.reason || 'unknown reason');
+                setStatus('rendered');
             }
         } catch (err) {
             setErrorMsg(err.message || 'Unknown error');
@@ -51,8 +63,19 @@ function RenderMovAction({ parsed }) {
     if (status === 'done') {
         return <button className="btn-render" disabled>Added to Timeline &#10003;</button>;
     }
+    if (status === 'mediapool') {
+        return (
+            <button className="btn-render warn" disabled title={reason}>
+                Added to Media Pool — couldn’t place on timeline: {reason}. Drag it in manually.
+            </button>
+        );
+    }
     if (status === 'rendered') {
-        return <button className="btn-render" disabled>Rendered &#10003;</button>;
+        return (
+            <button className="btn-render warn" disabled title={reason}>
+                Rendered to disk — couldn’t add to Media Pool: {reason}.
+            </button>
+        );
     }
     return (
         <button className="btn-render error" disabled title={errorMsg}>
