@@ -1,4 +1,4 @@
-# Claude Resolve (v0.5.0-beta)
+# Claude Resolve (v0.5.5-beta)
 
 **AI Motion Graphics Generator for DaVinci Resolve Studio**
 *by Oleg Kupshukov*
@@ -11,19 +11,13 @@ Claude Resolve is a Workflow Integration Plugin that brings AI-powered motion gr
 
 ## Requirements
 
-- **DaVinci Resolve Studio 21+** (not the free version — Workflow Integration Plugins require Studio)
-- **Node.js 18+** — required by the Claude Code CLI
-- **Claude Code CLI** with an active Pro or Max subscription
-- **ffmpeg** in PATH
+- **DaVinci Resolve Studio** — the free edition can't load Workflow Integration Plugins, so Studio is required. Built and tested against **Studio 21**; the installer confirms Resolve is present but does not check its version, so 19/20 Studio may work (untested).
+- **Claude Code CLI**, signed in with an active **Pro or Max** plan. The plugin authenticates through the CLI's own login (`claude login`) — it never uses or stores an API key.
+- **Node.js 18+** — the Claude Code CLI runs on Node (used during install, and at runtime to generate animations). Frame rendering runs on Resolve's bundled Electron, so it needs no separate system Node.
+- **ffmpeg** — a separate tool, not bundled. The installer auto-installs it (winget on Windows, Homebrew on macOS) and verifies it runs; if neither package manager is available it finishes with the exact command to run. Rendering needs it.
 - **Windows** or **macOS**
 
-Check your Node.js version:
-
-```
-node --version    # must be v18 or newer
-```
-
-On macOS, if it's older than 18, upgrade with `brew install node` (latest) or `fnm install 22`.
+The installer auto-installs Node, the Claude Code CLI, Playwright Chromium, and ffmpeg when they're missing, then verifies all four and ends with a clear summary of anything left to fix — see [Installation](#installation). For step-by-step setup and fixes, see [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Installation
 
@@ -79,6 +73,29 @@ The plugin ships with a curated set of fonts so generated animations look consis
 - This is a beta — expect rough edges; please report issues on GitHub or Discord
 
 Tested on Windows and macOS (Apple Silicon).
+
+## Troubleshooting
+
+**Windows: the installer hangs or fails at "Downloading Playwright Chromium."**
+Antivirus — usually Windows Defender — can block Chromium while it extracts. Add the browser-cache folder to your exclusions, then re-run the install:
+1. **Settings → Privacy & security → Virus & threat protection → Manage settings → Add or remove exclusions**, and add the folder `%LOCALAPPDATA%\ms-playwright`.
+2. Re-run `install.bat`. To retry just this step manually:
+   ```
+   set PLAYWRIGHT_BROWSERS_PATH=%LOCALAPPDATA%\ms-playwright
+   cd plugin\renderer
+   npx playwright install chromium
+   ```
+
+**Rendering fails with "FFmpeg failed to spawn."**
+ffmpeg isn't installed or isn't on `PATH`. Install it — `winget install Gyan.FFmpeg` (Windows) or `brew install ffmpeg` (macOS) — then reopen Resolve. Verify with `ffmpeg -version`.
+
+**The plugin doesn't appear in Resolve.**
+Fully quit and reopen Resolve, then look under **Workspace > Workflow Integration > Claude Resolve**. Confirm the plugin copied to:
+- Windows: `%ProgramData%\Blackmagic Design\DaVinci Resolve\Support\Workflow Integration Plugins\com.clauderesolve.plugin`
+- macOS: `/Library/Application Support/Blackmagic Design/DaVinci Resolve/Workflow Integration Plugins/com.clauderesolve.plugin`
+
+**"Claude Code is not logged in."**
+Run `claude login` in a terminal (or use the plugin's login button) and complete the browser sign-in with your Pro or Max account.
 
 ## Links
 

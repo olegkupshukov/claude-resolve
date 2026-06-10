@@ -122,7 +122,7 @@ function Show-Success {
     $inner = 46
     $top = "  $BTL" + ($BH.ToString() * $inner) + $BTR
     $bot = "  $BBL" + ($BH.ToString() * $inner) + $BBR
-    $text = "Claude Resolve installed successfully"
+    $text = "Claude Resolve - ready to render"
     $pad = $inner - ($text.Length + 6)        # 6 = "  OK  " spacing
     $teal = GradientAt 1.0
 
@@ -141,6 +141,29 @@ function Show-Success {
     Write-Host ''
 }
 
+# Honest end summary when one or more runtime deps couldn't be verified: the
+# plugin is copied, but list each gap with the exact fix command (the same
+# string the plugin's runtime pre-flight shows).
+function Show-Warnings {
+    $n = $script:DepWarnings.Count
+    Write-Host ''
+    Write-Host '       ' -NoNewline
+    Write-Host $ICON_WARN -ForegroundColor Yellow -NoNewline
+    Write-Host "  Installed with $n warning(s) - the plugin is in place, but:" -ForegroundColor Yellow
+    Write-Host ''
+    foreach ($d in $script:DepWarnings) {
+        Write-Host "         - $($d.Name) is missing or unverified. Fix:" -ForegroundColor Gray
+        Write-Host "             $($d.Fix)" -ForegroundColor White
+    }
+    Write-Host ''
+    Write-Host '       Generating animations works; rendering a .mov may fail until fixed.' -ForegroundColor Gray
+    Write-Host '       The plugin shows the same fix if you hit it at render time.' -ForegroundColor DarkGray
+    Write-Host ''
+    Write-Host '       Restart DaVinci Resolve, then open it from:' -ForegroundColor Gray
+    Write-Host '       Workspace > Workflow Integration > Claude Resolve' -ForegroundColor White
+    Write-Host ''
+}
+
 # ---------------------------------------------------------------- paths
 $RepoRoot         = $PSScriptRoot
 $PluginSrc        = Join-Path $RepoRoot 'plugin'
@@ -148,7 +171,60 @@ $RendererSrc      = Join-Path $PluginSrc 'renderer'
 # Windows/ProgramData path includes the "Support" segment (the macOS path omits
 # it) — this matches Blackmagic's per-platform layout. Do not "sync" the two.
 $Dest             = Join-Path $env:ProgramData 'Blackmagic Design\DaVinci Resolve\Support\Workflow Integration Plugins\com.clauderesolve.plugin'
-$InstallerVersion = '0.5.4-beta'
+$InstallerVersion = '0.5.5-beta'
+
+# Runtime-dependency readiness tracker. Each dep we can't verify at the end is
+# recorded with the exact fix command the plugin's runtime shows, so the
+# installer and the in-app render error tell one consistent story.
+$script:DepWarnings = @()
+function Add-DepWarning([string]$name, [string]$fix) {
+    $script:DepWarnings += [pscustomobject]@{ Name = $name; Fix = $fix }
+}
+
+# True only if the executable at $path actually runs (a present-but-broken
+# binary should not count as verified). All output suppressed.
+function Test-Runs([string]$path, [string[]]$cmdArgs) {
+    if (-not $path) { return $false }
+    try {
+        & $path @cmdArgs *> $null
+        return ($LASTEXITCODE -eq 0)
+    } catch { return $false }
+}
+
+# Resolve ffmpeg the same way the plugin does at runtime (ipc/paths.js): PATH
+# first, then the known absolute install locations — winget's user-scope Links
+# shim, Program Files, and scoop. Returns an absolute path or $null.
+function Resolve-Ffmpeg {
+    $cmd = Get-Command ffmpeg -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source -and (Test-Path $cmd.Source)) { return $cmd.Source }
+    $bases = @(
+        @{ Base = $env:ProgramFiles; Rel = 'FFmpeg\ffmpeg.exe' },
+        @{ Base = $env:ProgramFiles; Rel = 'FFmpeg\bin\ffmpeg.exe' },
+        @{ Base = $env:ProgramW6432; Rel = 'FFmpeg\bin\ffmpeg.exe' },
+        @{ Base = $env:LOCALAPPDATA; Rel = 'Microsoft\WinGet\Links\ffmpeg.exe' },
+        @{ Base = $env:USERPROFILE;  Rel = 'scoop\shims\ffmpeg.exe' }
+    )
+    foreach ($b in $bases) {
+        if ($b.Base) {
+            $p = Join-Path $b.Base $b.Rel
+            if (Test-Path $p) { return $p }
+        }
+    }
+    return $null
+}
+
+# Resolve the Claude Code CLI: PATH, then the npm-global shim locations.
+function Resolve-Claude {
+    $cmd = Get-Command claude -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source -and (Test-Path $cmd.Source)) { return $cmd.Source }
+    foreach ($p in @(
+        (Join-Path $env:APPDATA 'npm\claude.cmd'),
+        (Join-Path $env:LOCALAPPDATA 'npm\claude.cmd')
+    )) {
+        if ($p -and (Test-Path $p)) { return $p }
+    }
+    return $null
+}
 
 # Elevate ONLY the plugin copy: everything else runs as the invoking user so
 # Node/npm-global, the Claude CLI + login, and the Playwright Chromium cache
@@ -314,26 +390,26 @@ Ok "Node.js $nodeVer"
 
 # 3 - Claude Code CLI
 Step 3 'Checking Claude Code CLI'
-$haveClaude = [bool](Get-Command claude -ErrorAction SilentlyContinue)
-if (-not $haveClaude -and (Test-Path (Join-Path $env:APPDATA 'npm\claude.cmd'))) {
-    $haveClaude = $true
-}
-if (-not $haveClaude) {
+$claudePath = Resolve-Claude
+if (-not $claudePath) {
     Warn 'Claude Code CLI not found - installing via npm...'
     & npm install -g '@anthropic-ai/claude-code'
-    if ($LASTEXITCODE -ne 0) {
-        Warn 'Automatic install failed. Install it manually: npm install -g @anthropic-ai/claude-code'
-    } else {
-        Ok 'Claude Code CLI installed.'
-        $haveClaude = $true
-    }
-} else {
-    Ok 'Claude Code CLI present.'
+    Sync-Path
+    $claudePath = Resolve-Claude
 }
+# Verify it actually runs — a present shim that errors is still broken.
+if ($claudePath -and (Test-Runs $claudePath @('--version'))) {
+    Ok 'Claude Code CLI ready.'
+} else {
+    Warn 'Claude Code CLI missing or not runnable. Install it: npm install -g @anthropic-ai/claude-code'
+    Add-DepWarning 'Claude Code CLI' 'npm install -g @anthropic-ai/claude-code'
+}
+# Login state is informational only - NOT part of the readiness gate (the
+# credentials-file check can false-warn, and login is a manual user step).
 if (Test-Path (Join-Path $env:USERPROFILE '.claude\.credentials.json')) {
     Ok 'Claude Code is logged in.'
 } else {
-    Warn 'Claude Code installed but not logged in - run claude in terminal to log in.'
+    Warn 'Not logged in yet - run "claude" in a terminal (or use the plugin login button).'
 }
 
 # 4 - Renderer dependencies
@@ -352,17 +428,48 @@ Step 5 'Downloading Playwright Chromium'
 $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:LOCALAPPDATA 'ms-playwright'
 Push-Location $RendererSrc
 & npx --yes playwright install chromium
-$exit = $LASTEXITCODE
 Pop-Location
-if ($exit -ne 0) { Fail 'Playwright Chromium download failed.' }
-Ok 'Chromium installed.'
+# Verify the browser binary exists (the same check render.js runs at render
+# time): exit code alone misses an antivirus-quarantined chrome.exe. Don't
+# hard-fail - the plugin copy still completes, and the runtime pre-flight and
+# end summary both point to the one-line fix.
+Push-Location $RendererSrc
+& node -e "const p=require('playwright').chromium.executablePath(); process.exit(require('fs').existsSync(p)?0:1)" *> $null
+$chromiumOk = ($LASTEXITCODE -eq 0)
+Pop-Location
+if ($chromiumOk) {
+    Ok 'Chromium installed.'
+} else {
+    Warn 'Chromium not verified (download blocked, or antivirus quarantined it).'
+    Add-DepWarning 'Chromium' 'cd plugin\renderer ; npx playwright install chromium'
+}
 
 # 6 - ffmpeg
 Step 6 'Checking ffmpeg'
-if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {
-    Ok 'ffmpeg found.'
+$ffmpegPath = Resolve-Ffmpeg
+if ($ffmpegPath -and (Test-Runs $ffmpegPath @('-version'))) {
+    Ok "ffmpeg found ($ffmpegPath)."
+} elseif (Get-Command winget -ErrorAction SilentlyContinue) {
+    # Auto-install UNELEVATED: Gyan.FFmpeg is a portable package, so an
+    # unelevated winget drops its shim at %LOCALAPPDATA%\Microsoft\WinGet\Links
+    # - exactly where Resolve-Ffmpeg / the runtime looks. Elevating would put it
+    # in the admin profile or a machine Links dir the runtime doesn't probe.
+    Warn 'ffmpeg not found - installing via winget (Gyan.FFmpeg, no admin needed)...'
+    try {
+        & winget install --id Gyan.FFmpeg -e --silent `
+            --accept-source-agreements --accept-package-agreements
+    } catch {}
+    Sync-Path
+    $ffmpegPath = Resolve-Ffmpeg
+    if ($ffmpegPath -and (Test-Runs $ffmpegPath @('-version'))) {
+        Ok "ffmpeg installed ($ffmpegPath)."
+    } else {
+        Warn 'ffmpeg install did not complete - you can finish it later.'
+        Add-DepWarning 'ffmpeg' 'winget install Gyan.FFmpeg'
+    }
 } else {
-    Warn 'ffmpeg not found on PATH. Install it (e.g. winget install Gyan.FFmpeg, or choco install ffmpeg), then reopen your terminal.'
+    Warn 'ffmpeg not found and winget is unavailable.'
+    Add-DepWarning 'ffmpeg' 'winget install Gyan.FFmpeg   (or: choco install ffmpeg)'
 }
 
 # 7 - Copy plugin into DaVinci Resolve (elevated — the only step that needs admin)
@@ -393,5 +500,9 @@ Ok 'All required files present.'
 
 # 9 - Done
 Step 9 'Done'
-Show-Success
+if ($script:DepWarnings.Count -eq 0) {
+    Show-Success
+} else {
+    Show-Warnings
+}
 Read-Host '       Press Enter to exit'

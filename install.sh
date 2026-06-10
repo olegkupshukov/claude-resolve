@@ -16,7 +16,54 @@ RENDERER_SRC="$PLUGIN_SRC/renderer"
 # macOS plugins dir intentionally OMITS the "Support/" segment that the
 # Windows/ProgramData path includes — this matches Blackmagic's macOS layout.
 DEST="/Library/Application Support/Blackmagic Design/DaVinci Resolve/Workflow Integration Plugins/com.clauderesolve.plugin"
-INSTALLER_VERSION='0.5.4-beta'
+INSTALLER_VERSION='0.5.5-beta'
+
+# Runtime-dependency readiness tracker. Each dep we can't verify at the end is
+# recorded with the exact fix command the plugin's runtime shows, so installer
+# and in-app render error tell one consistent story.
+DEP_WARNINGS=()
+add_dep_warning() {  # $1 = name, $2 = fix command
+    DEP_WARNINGS+=("$1|$2")
+}
+
+# Resolve ffmpeg the way the plugin does at runtime (ipc/paths.js): a login
+# shell probe (sees Homebrew/nvm PATHs a GUI app's stripped PATH misses), then
+# the known absolute locations. Echoes an absolute path, or returns non-zero.
+resolve_ffmpeg() {
+    local c
+    c="$(zsh -lic 'command -v ffmpeg' 2>/dev/null | tr -d '\r')"
+    [ -n "$c" ] && [ -x "$c" ] && { printf '%s' "$c"; return 0; }
+    c="$(command -v ffmpeg 2>/dev/null)"
+    [ -n "$c" ] && { printf '%s' "$c"; return 0; }
+    for c in /opt/homebrew/bin/ffmpeg /usr/local/bin/ffmpeg; do
+        [ -x "$c" ] && { printf '%s' "$c"; return 0; }
+    done
+    return 1
+}
+
+# Resolve the Claude Code CLI the same way (login-shell probe + candidates).
+resolve_claude() {
+    local c
+    c="$(zsh -lic 'command -v claude' 2>/dev/null | tr -d '\r')"
+    [ -n "$c" ] && [ -x "$c" ] && { printf '%s' "$c"; return 0; }
+    c="$(command -v claude 2>/dev/null)"
+    [ -n "$c" ] && { printf '%s' "$c"; return 0; }
+    for c in /usr/local/bin/claude /opt/homebrew/bin/claude "$HOME/.claude/local/claude" "$HOME/.npm-global/bin/claude" "$HOME/.local/bin/claude"; do
+        [ -x "$c" ] && { printf '%s' "$c"; return 0; }
+    done
+    return 1
+}
+
+# Resolve Homebrew: PATH, then the Apple-silicon and Intel default prefixes.
+resolve_brew() {
+    local c
+    c="$(command -v brew 2>/dev/null)"
+    [ -n "$c" ] && { printf '%s' "$c"; return 0; }
+    for c in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+        [ -x "$c" ] && { printf '%s' "$c"; return 0; }
+    done
+    return 1
+}
 
 # ---------------------------------------------------------------- colours
 ESC=$(printf '\033')
@@ -91,7 +138,7 @@ fail() {
 
 print_success() {
     local inner=46
-    local text="Claude Resolve installed successfully"
+    local text="Claude Resolve - ready to render"
     local rule; rule="$(printf '─%.0s' $(seq 1 $inner))"
     local vis=$(( 3 + 1 + 2 + ${#text} ))
     local pad=$(( inner - vis ))
@@ -100,6 +147,29 @@ print_success() {
     printf '%s  │%s   %s✓%s  %s%s%s%*s%s│%s\n' \
         "$TEAL" "$RESET" "$LEAF" "$RESET" "$WHITE" "$text" "$RESET" "$pad" "" "$TEAL" "$RESET"
     printf '%s  ╰%s╯%s\n' "$TEAL" "$rule" "$RESET"
+    echo
+    printf '       %sRestart DaVinci Resolve, then open it from:%s\n' "$DIM" "$RESET"
+    printf '       %sWorkspace > Workflow Integration > Claude Resolve%s\n' "$WHITE" "$RESET"
+    echo
+}
+
+# Honest end summary when one or more runtime deps couldn't be verified: the
+# plugin is copied, but list each gap with the exact fix command (the same
+# string the plugin's runtime pre-flight shows). Only called when count > 0,
+# so "${DEP_WARNINGS[@]}" is always non-empty here (safe under bash 3.2 set -u).
+print_warnings() {
+    local n=${#DEP_WARNINGS[@]} entry name fix
+    echo
+    printf '       %s  %sInstalled with %s warning(s) - the plugin is in place, but:%s\n' "$I_WARN" "$AMBER" "$n" "$RESET"
+    echo
+    for entry in "${DEP_WARNINGS[@]}"; do
+        name="${entry%%|*}"; fix="${entry#*|}"
+        printf '         %s- %s is missing or unverified. Fix:%s\n' "$DIM" "$name" "$RESET"
+        printf '             %s%s%s\n' "$WHITE" "$fix" "$RESET"
+    done
+    echo
+    printf '       %sGenerating works; rendering a .mov may fail until fixed.%s\n' "$DIM" "$RESET"
+    printf '       %sThe plugin shows the same fix if you hit it at render time.%s\n' "$DIM" "$RESET"
     echo
     printf '       %sRestart DaVinci Resolve, then open it from:%s\n' "$DIM" "$RESET"
     printf '       %sWorkspace > Workflow Integration > Claude Resolve%s\n' "$WHITE" "$RESET"
@@ -201,20 +271,26 @@ ok "Node.js $(node --version)"
 
 # 3 - Claude Code CLI
 step 3 'Checking Claude Code CLI'
-if command -v claude >/dev/null 2>&1; then
-    ok 'Claude Code CLI present.'
-else
+CLAUDE_PATH="$(resolve_claude || true)"
+if [ -z "$CLAUDE_PATH" ]; then
     warn 'Claude Code CLI not found - installing via npm...'
-    if npm install -g @anthropic-ai/claude-code; then
-        ok 'Claude Code CLI installed.'
-    else
-        warn 'Automatic install failed. Install it manually: npm install -g @anthropic-ai/claude-code'
-    fi
+    npm install -g @anthropic-ai/claude-code || true
+    hash -r 2>/dev/null || true
+    CLAUDE_PATH="$(resolve_claude || true)"
 fi
+# Verify it runs - a present shim that errors is still broken.
+if [ -n "$CLAUDE_PATH" ] && "$CLAUDE_PATH" --version >/dev/null 2>&1; then
+    ok 'Claude Code CLI ready.'
+else
+    warn 'Claude Code CLI missing or not runnable. Install it: npm install -g @anthropic-ai/claude-code'
+    add_dep_warning 'Claude Code CLI' 'npm install -g @anthropic-ai/claude-code'
+fi
+# Login state is informational only - NOT part of the readiness gate (the
+# credentials-file check can false-warn, and login is a manual user step).
 if [ -f "$HOME/.claude/.credentials.json" ]; then
     ok 'Claude Code is logged in.'
 else
-    warn 'Claude Code installed but not logged in - run claude in terminal to log in.'
+    warn 'Not logged in yet - run "claude" in a terminal (or use the plugin login button).'
 fi
 
 # 4 - Renderer dependencies
@@ -226,17 +302,43 @@ ok 'Renderer dependencies installed.'
 
 # 5 - Chromium
 step 5 'Downloading Playwright Chromium'
-if ! ( cd "$RENDERER_SRC" && npx --yes playwright install chromium ); then
-    fail 'Playwright Chromium download failed.'
+# Pin the browser cache to this user's profile so install-time and run-time
+# (ipc/paths.js PLAYWRIGHT_BROWSERS_PATH) always agree - previously this worked
+# only by coincidentally matching Playwright's default.
+export PLAYWRIGHT_BROWSERS_PATH="$HOME/Library/Caches/ms-playwright"
+( cd "$RENDERER_SRC" && npx --yes playwright install chromium ) || true
+# Verify the browser binary exists (the same check render.js runs at render
+# time): exit code alone misses a quarantined Chromium. Don't hard-fail - the
+# plugin copy still completes and the summary points to the one-line fix.
+if ( cd "$RENDERER_SRC" && node -e "const p=require('playwright').chromium.executablePath(); process.exit(require('fs').existsSync(p)?0:1)" >/dev/null 2>&1 ); then
+    ok 'Chromium installed.'
+else
+    warn 'Chromium not verified (download blocked or quarantined).'
+    add_dep_warning 'Chromium' 'cd plugin/renderer && npx playwright install chromium'
 fi
-ok 'Chromium installed.'
 
 # 6 - ffmpeg
 step 6 'Checking ffmpeg'
-if command -v ffmpeg >/dev/null 2>&1; then
-    ok 'ffmpeg found.'
+FFMPEG_PATH="$(resolve_ffmpeg || true)"
+if [ -n "$FFMPEG_PATH" ] && "$FFMPEG_PATH" -version >/dev/null 2>&1; then
+    ok "ffmpeg found ($FFMPEG_PATH)."
 else
-    warn 'ffmpeg not found on PATH. Rendering needs ffmpeg (brew install ffmpeg).'
+    BREW_PATH="$(resolve_brew || true)"
+    if [ -n "$BREW_PATH" ]; then
+        # We already dropped root, so brew runs as the user (it refuses root).
+        warn 'ffmpeg not found - installing via Homebrew...'
+        "$BREW_PATH" install ffmpeg || true
+        FFMPEG_PATH="$(resolve_ffmpeg || true)"
+        if [ -n "$FFMPEG_PATH" ] && "$FFMPEG_PATH" -version >/dev/null 2>&1; then
+            ok "ffmpeg installed ($FFMPEG_PATH)."
+        else
+            warn 'ffmpeg install did not complete - you can finish it later.'
+            add_dep_warning 'ffmpeg' 'brew install ffmpeg'
+        fi
+    else
+        warn 'ffmpeg not found and Homebrew is unavailable.'
+        add_dep_warning 'ffmpeg' 'brew install ffmpeg'
+    fi
 fi
 
 # 7 - Copy plugin into DaVinci Resolve (needs root)
@@ -275,5 +377,9 @@ ok 'All required files present.'
 
 # 9 - Done
 step 9 'Done'
-print_success
+if [ "${#DEP_WARNINGS[@]}" -eq 0 ]; then
+    print_success
+else
+    print_warnings
+fi
 read -r -p "       Press Enter to exit..." _
