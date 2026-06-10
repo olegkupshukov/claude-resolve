@@ -98,6 +98,15 @@ claude-resolve/
 - Before pushing: state the remote/branch and ask for permission.
 - No exceptions — even if the user previously approved a similar action.
 
+## Release Checklist
+
+Before tagging a release, bump the version to the tag version in ALL of:
+`plugin/package.json` (the in-app update check compares this against the latest
+GitHub release tag — a stale value shows a permanent "update available" badge),
+`plugin/manifest.xml`, `plugin/renderer/package.json`, `$InstallerVersion` in
+`install.ps1`, `INSTALLER_VERSION` in `install.sh`.
+Rule: **tag = GitHub Release = package.json version.**
+
 ## Commit Convention
 
 - `feat:` new feature

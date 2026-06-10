@@ -3,7 +3,7 @@
     <Plugin>
         <Id>com.clauderesolve.plugin</Id>
         <Name>Claude Resolve</Name>
-        <Version>0.1.0</Version>
+        <Version>0.5.4</Version>
         <Description>AI-powered motion graphics generator and assistant for DaVinci Resolve</Description>
         <FilePath>main.js</FilePath>
     </Plugin>

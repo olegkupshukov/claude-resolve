@@ -57,6 +57,15 @@ function emit(msg) {
     process.stdout.write(JSON.stringify(msg) + '\n');
 }
 
+// Fatal error: emit the structured JSON event (stdout) AND mirror one flat
+// line to stderr — the parent prefers the JSON event but keeps stderr as a
+// fallback, so the real message survives either way.
+function fatal(message) {
+    emit({ type: 'error', message });
+    process.stderr.write('ERROR: ' + String(message).replace(/\s*\n\s*/g, ' ').slice(0, 500) + '\n');
+    process.exit(1);
+}
+
 function pad6(n) {
     return String(n).padStart(6, '0');
 }
@@ -224,31 +233,37 @@ async function main() {
     // module-load error if that runtime is too old.
     const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
     if (!Number.isFinite(nodeMajor) || nodeMajor < 18) {
-        emit({ type: 'error', message: `Renderer needs Node 18+, but the bundled runtime is Node ${process.versions.node}.` });
-        process.exit(1);
+        fatal(`Renderer needs Node 18+, but the bundled runtime is Node ${process.versions.node}.`);
     }
 
     if (!args.htmlPath) {
-        emit({ type: 'error', message: 'Missing HTML path argument' });
-        process.exit(1);
+        fatal('Missing HTML path argument');
     }
     if (!args.output) {
-        emit({ type: 'error', message: 'Missing --output argument' });
-        process.exit(1);
+        fatal('Missing --output argument');
     }
 
     const htmlPath = path.resolve(args.htmlPath);
     if (!fs.existsSync(htmlPath)) {
-        emit({ type: 'error', message: `HTML file not found: ${htmlPath}` });
-        process.exit(1);
+        fatal(`HTML file not found: ${htmlPath}`);
     }
 
     let initScript;
     try {
         initScript = buildInitScript();
     } catch (e) {
-        emit({ type: 'error', message: e.message });
-        process.exit(1);
+        fatal(e.message);
+    }
+
+    // Pre-flight: verify the Playwright Chromium build exists before doing any
+    // work, so a missing/corrupt browser cache fails in seconds with an
+    // actionable message instead of an opaque launch() stack.
+    let chromiumPath = null;
+    try { chromiumPath = chromium.executablePath(); } catch (_e) { /* not installed */ }
+    if (!chromiumPath || !fs.existsSync(chromiumPath)) {
+        fatal('Playwright Chromium not found' + (chromiumPath ? ` at ${chromiumPath}` : '') +
+            '. Re-run the installer, or run "npx playwright install chromium" in plugin/renderer' +
+            ' (see README troubleshooting if antivirus blocked the download).');
     }
 
     const framesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude_resolve_frames_'));
@@ -275,8 +290,7 @@ async function main() {
 
         let duration = await page.evaluate('window.getAnimationDuration()');
         if (typeof duration !== 'number' || !isFinite(duration) || duration <= 0) {
-            emit({ type: 'error', message: `getAnimationDuration returned invalid value: ${JSON.stringify(duration)}` });
-            process.exit(1);
+            fatal(`getAnimationDuration returned invalid value: ${JSON.stringify(duration)}`);
         }
 
         let clamped = false;
@@ -287,8 +301,7 @@ async function main() {
 
         const totalFrames = Math.floor(duration * args.fps);
         if (totalFrames <= 0) {
-            emit({ type: 'error', message: `Computed 0 frames (duration=${duration}, fps=${args.fps})` });
-            process.exit(1);
+            fatal(`Computed 0 frames (duration=${duration}, fps=${args.fps})`);
         }
 
         const mode = await detectMode(page);
@@ -339,12 +352,10 @@ async function main() {
         const result = spawnSync(args.ffmpeg, ffmpegArgs, { encoding: 'utf-8' });
 
         if (result.error) {
-            emit({ type: 'error', message: `FFmpeg failed to spawn: ${result.error.message}` });
-            process.exit(1);
+            fatal(`FFmpeg failed to spawn: ${result.error.message}`);
         }
         if (result.status !== 0) {
-            emit({ type: 'error', message: `FFmpeg failed: ${(result.stderr || '').slice(0, 500)}` });
-            process.exit(1);
+            fatal(`FFmpeg failed: ${(result.stderr || '').slice(0, 500)}`);
         }
 
         emit({ type: 'done', output: args.output });
@@ -361,6 +372,5 @@ main()
         process.exit(0);
     })
     .catch((err) => {
-        emit({ type: 'error', message: err && err.message ? err.message : String(err) });
-        process.exit(1);
+        fatal(err && err.message ? err.message : String(err));
     });

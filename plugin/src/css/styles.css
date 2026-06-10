@@ -779,6 +779,12 @@ body, #root {
     background: var(--progress-fill);
     transition: width var(--duration-slow) var(--ease-out-quint);
 }
+.render-note {
+    flex: 1 1 100%;        /* full-width row below the specs, like .warn/.error */
+    font: var(--fs-10)/1.5 var(--font-mono);
+    color: var(--color-warn);
+    text-align: left;
+}
 
 .code-toggle { margin-top: var(--size-2); }
 .code-toggle summary {

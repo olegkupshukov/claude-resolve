@@ -16,7 +16,7 @@ RENDERER_SRC="$PLUGIN_SRC/renderer"
 # macOS plugins dir intentionally OMITS the "Support/" segment that the
 # Windows/ProgramData path includes — this matches Blackmagic's macOS layout.
 DEST="/Library/Application Support/Blackmagic Design/DaVinci Resolve/Workflow Integration Plugins/com.clauderesolve.plugin"
-INSTALLER_VERSION='0.5.0-beta'
+INSTALLER_VERSION='0.5.4-beta'
 
 # ---------------------------------------------------------------- colours
 ESC=$(printf '\033')

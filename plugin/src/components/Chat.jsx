@@ -8,12 +8,18 @@ function RenderMovAction({ parsed }) {
     const [progress, setProgress] = useState(0);
     const [errorMsg, setErrorMsg] = useState('');
     const [reason, setReason] = useState('');
+    const [warningMsg, setWarningMsg] = useState('');
 
     useEffect(() => {
         if (status !== 'rendering') return;
         const cleanup = window.overlayAPI.onRenderProgress((data) => {
             if (data.type === 'progress') setProgress(data.percent);
             else if (data.type === 'encoding') setProgress(100);
+            // Renderer diagnostics: a warning is informational (shown as a
+            // note on the card); an error pre-fills the failure message the
+            // close result will confirm moments later.
+            else if (data.type === 'warning') setWarningMsg(data.message);
+            else if (data.type === 'error') setErrorMsg(data.message);
         });
         return cleanup;
     }, [status]);
@@ -23,6 +29,7 @@ function RenderMovAction({ parsed }) {
         setProgress(0);
         setErrorMsg('');
         setReason('');
+        setWarningMsg('');
         try {
             const result = await window.overlayAPI.renderMov({
                 html: parsed.html, name: parsed.name
@@ -49,38 +56,42 @@ function RenderMovAction({ parsed }) {
         }
     }
 
+    let button;
     if (status === null) {
-        return <button className="btn-render" onClick={handleRender}><Download /> Render .mov</button>;
-    }
-    if (status === 'rendering') {
-        return (
+        button = <button className="btn-render" onClick={handleRender}><Download /> Render .mov</button>;
+    } else if (status === 'rendering') {
+        button = (
             <button className="btn-render" disabled>
                 <Download /> Rendering… {progress}%
                 <span className="render-progress" style={{ width: progress + '%' }} />
             </button>
         );
-    }
-    if (status === 'done') {
-        return <button className="btn-render" disabled>Added to Timeline &#10003;</button>;
-    }
-    if (status === 'mediapool') {
-        return (
+    } else if (status === 'done') {
+        button = <button className="btn-render" disabled>Added to Timeline &#10003;</button>;
+    } else if (status === 'mediapool') {
+        button = (
             <button className="btn-render warn" disabled title={reason}>
                 Added to Media Pool — couldn’t place on timeline: {reason}. Drag it in manually.
             </button>
         );
-    }
-    if (status === 'rendered') {
-        return (
+    } else if (status === 'rendered') {
+        button = (
             <button className="btn-render warn" disabled title={reason}>
                 Rendered to disk — couldn’t add to Media Pool: {reason}.
             </button>
         );
+    } else {
+        button = (
+            <button className="btn-render error" disabled title={errorMsg}>
+                Render Failed: {errorMsg}
+            </button>
+        );
     }
     return (
-        <button className="btn-render error" disabled title={errorMsg}>
-            Render Failed: {errorMsg}
-        </button>
+        <>
+            {button}
+            {warningMsg && <div className="render-note" title={warningMsg}>⚠ {warningMsg}</div>}
+        </>
     );
 }
 

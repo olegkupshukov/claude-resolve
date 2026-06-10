@@ -148,7 +148,7 @@ $RendererSrc      = Join-Path $PluginSrc 'renderer'
 # Windows/ProgramData path includes the "Support" segment (the macOS path omits
 # it) — this matches Blackmagic's per-platform layout. Do not "sync" the two.
 $Dest             = Join-Path $env:ProgramData 'Blackmagic Design\DaVinci Resolve\Support\Workflow Integration Plugins\com.clauderesolve.plugin'
-$InstallerVersion = '0.5.0-beta'
+$InstallerVersion = '0.5.4-beta'
 
 # Elevate ONLY the plugin copy: everything else runs as the invoking user so
 # Node/npm-global, the Claude CLI + login, and the Playwright Chromium cache

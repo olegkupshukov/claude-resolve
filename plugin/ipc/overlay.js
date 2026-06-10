@@ -12,10 +12,19 @@ const {
     FFMPEG_CANDIDATES, FFMPEG_VERIFY_CMD
 } = require('./paths');
 
-// Resolve executable paths at load time — Resolve's Electron has a stripped PATH
-const FFMPEG_PATH = findExecutable(FFMPEG_CANDIDATES, FFMPEG_VERIFY_CMD);
+// Resolve ffmpeg at load time (Resolve's Electron has a stripped PATH), but
+// re-resolve when the cached path doesn't exist: findExecutable's last resort
+// is candidates[0] — a path that may not exist — and ffmpeg can be installed
+// while Resolve is already running.
+let ffmpegPath = findExecutable(FFMPEG_CANDIDATES, FFMPEG_VERIFY_CMD);
 
-console.log('RESOLVED: ffmpeg=' + FFMPEG_PATH);
+console.log('RESOLVED: ffmpeg=' + ffmpegPath);
+
+function resolveFfmpeg() {
+    if (ffmpegPath && fs.existsSync(ffmpegPath)) return ffmpegPath;
+    ffmpegPath = findExecutable(FFMPEG_CANDIDATES, FFMPEG_VERIFY_CMD);
+    return (ffmpegPath && fs.existsSync(ffmpegPath)) ? ffmpegPath : null;
+}
 
 function renderFilename(name) {
     const safe = (name || 'Overlay').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -150,6 +159,18 @@ async function importToTimeline(movPath) {
 }
 
 async function handleRenderMov(_event, { html, name, fps, width, height }) {
+    // Pre-flight: fail in <1s with an actionable message when ffmpeg is
+    // missing, instead of after a full frame render.
+    const ffmpeg = resolveFfmpeg();
+    if (!ffmpeg) {
+        return {
+            success: false,
+            error: 'ffmpeg not found. Install it — "winget install Gyan.FFmpeg" (Windows) or ' +
+                '"brew install ffmpeg" (macOS) — then render again. ' +
+                'If it is installed but still not found, restart Resolve.'
+        };
+    }
+
     const cfg = readConfig();
     fps = fps || cfg.fps;
     width = width || cfg.width;
@@ -180,11 +201,12 @@ async function handleRenderMov(_event, { html, name, fps, width, height }) {
             '--width', String(width),
             '--height', String(height),
             '--output', movPath,
-            '--ffmpeg', FFMPEG_PATH
+            '--ffmpeg', ffmpeg
         ], { env: { ...ENV, ELECTRON_RUN_AS_NODE: '1', PLAYWRIGHT_BROWSERS_PATH } });
 
         let buf = '';
         let stderrBuf = '';
+        let lastError = null;
 
         proc.stdout.on('data', (chunk) => {
             buf += chunk.toString();
@@ -194,6 +216,9 @@ async function handleRenderMov(_event, { html, name, fps, width, height }) {
                 if (!line.trim()) continue;
                 try {
                     const msg = JSON.parse(line);
+                    // The renderer reports its real failure as a JSON event on
+                    // stdout — keep the last one for the close handler.
+                    if (msg.type === 'error' && msg.message) lastError = msg.message;
                     mainWindow.webContents.send('overlay:renderProgress', msg);
                 } catch (_e) { /* ignore non-JSON */ }
             }
@@ -208,8 +233,19 @@ async function handleRenderMov(_event, { html, name, fps, width, height }) {
             console.log('RENDER EXIT:', code, stderrBuf.slice(0, 500));
             cleanupTempDir();
             if (code !== 0) {
-                const errMsg = stderrBuf.trim().split('\n').pop() || 'Render process exited with code ' + code;
+                // Prefer the renderer's structured error; stderr's last
+                // non-empty line is the fallback (e.g. an uncaught crash).
+                const stderrLine = stderrBuf.split('\n').map(l => l.trim()).filter(Boolean).pop();
+                const errMsg = lastError || stderrLine || 'Render process exited with code ' + code;
                 resolve({ success: false, error: errMsg });
+                return;
+            }
+            // Clean exit — verify the encoder actually produced the file
+            // before reporting success.
+            let movSize = 0;
+            try { movSize = fs.statSync(movPath).size; } catch (_e) { /* missing */ }
+            if (movSize === 0) {
+                resolve({ success: false, error: 'Render finished but no .mov was produced (encoder output missing or empty)' });
                 return;
             }
             try {
